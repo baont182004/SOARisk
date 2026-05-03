@@ -1,7 +1,12 @@
 node_modules
+.pnpm-store
 .turbo
 dist
 .next
 coverage
+*.tsbuildinfo
 *.log
-pnpm-lock.yaml
+.env
+.env.*
+.git
+.vscode

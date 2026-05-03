@@ -21,6 +21,21 @@ export enum Severity {
   CRITICAL = 'critical',
 }
 
+export enum AlertSource {
+  MANUAL = 'manual',
+  PCAP_DEMO = 'pcap_demo',
+  WAZUH = 'wazuh',
+  SURICATA = 'suricata',
+  ZEEK = 'zeek',
+  MOCK = 'mock',
+}
+
+export enum NormalizedAlertStatus {
+  NORMALIZED = 'normalized',
+  FAILED = 'failed',
+  PENDING = 'pending',
+}
+
 export enum IncidentStatus {
   NEW = 'new',
   IN_PROGRESS = 'in_progress',

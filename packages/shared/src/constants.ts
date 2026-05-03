@@ -51,6 +51,14 @@ export const QUEUE_NAMES = {
   REPORT_GENERATION: 'report-generation-queue',
 } as const;
 
+export const RAW_ALERT_MOCK_SCENARIOS = [
+  'port-scan',
+  'icmp-flood',
+  'sql-injection',
+  'xss',
+  'suspicious-dns',
+] as const;
+
 export const SEED_PLAYBOOK_IDS = [
   'PB-001',
   'PB-002',

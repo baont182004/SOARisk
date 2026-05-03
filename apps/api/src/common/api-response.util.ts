@@ -26,3 +26,20 @@ export function createSuccessResponse<TData, TMeta>(message: string, data: TData
 export function createCollectionMeta(count: number): ApiCollectionMeta {
   return { count };
 }
+
+export function createPaginationMeta(options: {
+  count: number;
+  page: number;
+  limit: number;
+  total: number;
+}): ApiCollectionMeta {
+  const totalPages = options.total === 0 ? 0 : Math.ceil(options.total / options.limit);
+
+  return {
+    count: options.count,
+    page: options.page,
+    limit: options.limit,
+    total: options.total,
+    totalPages,
+  };
+}

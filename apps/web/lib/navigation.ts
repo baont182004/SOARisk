@@ -1,6 +1,7 @@
 export const navigationItems = [
   { href: '/', label: 'Overview' },
   { href: '/alerts', label: 'Alerts' },
+  { href: '/normalized-alerts', label: 'Normalized Alerts' },
   { href: '/playbooks', label: 'Playbooks' },
   { href: '/recommendations', label: 'Recommendations' },
   { href: '/incidents', label: 'Incidents' },

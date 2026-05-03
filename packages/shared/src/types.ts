@@ -1,8 +1,10 @@
 import type {
   AlertType,
+  AlertSource,
   ApprovalStatus,
   AutomationLevel,
   IncidentStatus,
+  NormalizedAlertStatus,
   PcapFileStatus,
   PcapJobStatus,
   Severity,
@@ -11,6 +13,10 @@ import type {
 
 export interface ApiCollectionMeta {
   count: number;
+  page?: number;
+  limit?: number;
+  total?: number;
+  totalPages?: number;
 }
 
 export interface ApiResponse<TData, TMeta = undefined> {
@@ -40,25 +46,23 @@ export interface AssetContext {
   tags?: string[];
 }
 
-export interface RawAlert {
-  alertId: string;
-  source: string;
-  alertType: AlertType;
-  title: string;
-  severity: Severity;
-  payload: Record<string, unknown>;
-  sourceIp?: string;
-  targetIp?: string;
-  createdAt: string;
+export interface AlertEvidence {
+  key: string;
+  value: string;
+  sourceField: string;
+  description: string;
 }
 
-export interface NormalizedAlert {
+export interface RawAlert {
   alertId: string;
-  source: string;
-  alertType: AlertType;
+  source: AlertSource;
+  sourceAlertId?: string;
   title: string;
-  severity: Severity;
-  confidence: number;
+  description?: string;
+  alertType?: AlertType;
+  severity?: Severity;
+  confidence?: number;
+  observedAt?: string;
   sourceIp?: string;
   targetIp?: string;
   sourcePort?: number;
@@ -66,10 +70,50 @@ export interface NormalizedAlert {
   protocol?: string;
   dnsQuery?: string;
   httpUri?: string;
-  evidence: Record<string, unknown>[];
-  assetContext: AssetContext[];
-  rawAlertId?: string;
+  username?: string;
+  hostname?: string;
+  assetId?: string;
+  rawPayload?: Record<string, unknown>;
+  tags: string[];
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface NormalizedAlert {
+  normalizedAlertId: string;
+  alertId: string;
+  source: AlertSource;
+  alertType: AlertType;
+  title: string;
+  description?: string;
+  severity: Severity;
+  confidence: number;
+  observedAt?: string;
+  sourceIp?: string;
+  targetIp?: string;
+  sourcePort?: number;
+  targetPort?: number;
+  protocol?: string;
+  dnsQuery?: string;
+  httpUri?: string;
+  username?: string;
+  hostname?: string;
+  assetId?: string;
+  assetContext: AssetContext[];
+  evidence: AlertEvidence[];
+  normalizationStatus: NormalizedAlertStatus;
+  normalizationNotes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NormalizationResult {
+  normalizedAlert: Omit<NormalizedAlert, 'normalizedAlertId' | 'createdAt' | 'updatedAt'>;
+  alertTypeWasInferred: boolean;
+  severityWasInferred: boolean;
+  confidenceWasInferred: boolean;
+  notes: string[];
+  evidence: AlertEvidence[];
 }
 
 export interface PlaybookAction {

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AlertsModule } from './alerts/alerts.module';
@@ -18,9 +18,23 @@ import { WorkflowsModule } from './workflows/workflows.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? 'mongodb://localhost:27017/soc_soar_platform',
-    ),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGODB_URI');
+
+        if (!uri) {
+          throw new Error('MONGODB_URI environment variable is required.');
+        }
+
+        const dbName = configService.get<string>('MONGODB_DB_NAME');
+
+        return {
+          uri,
+          ...(dbName ? { dbName } : {}),
+        };
+      },
+    }),
     HealthModule,
     AlertsModule,
     NormalizedAlertsModule,

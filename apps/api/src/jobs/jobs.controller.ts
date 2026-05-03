@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 
 import { JobsService } from './jobs.service';
 
@@ -9,5 +9,10 @@ export class JobsController {
   @Get()
   findAll() {
     return this.jobsService.findAll();
+  }
+
+  @Post('normalize-alert/:alertId')
+  enqueueAlertNormalization(@Param('alertId') alertId: string) {
+    return this.jobsService.enqueueAlertNormalization(alertId);
   }
 }

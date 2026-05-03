@@ -1,7 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AlertType, Severity } from '@soc-soar/shared';
+import {
+  AlertSource,
+  AlertType,
+  NormalizedAlertStatus,
+  Severity,
+} from '@soc-soar/shared';
 import type { HydratedDocument } from 'mongoose';
-import { SchemaTypes } from 'mongoose';
 
 export type NormalizedAlertDocument = HydratedDocument<NormalizedAlert>;
 
@@ -31,17 +35,37 @@ class AssetContextEntry {
 
 const AssetContextEntrySchema = SchemaFactory.createForClass(AssetContextEntry);
 
+@Schema({ _id: false, versionKey: false })
+class AlertEvidenceEntry {
+  @Prop({ required: true })
+  key!: string;
+
+  @Prop({ required: true })
+  value!: string;
+
+  @Prop({ required: true })
+  sourceField!: string;
+
+  @Prop({ required: true })
+  description!: string;
+}
+
+const AlertEvidenceEntrySchema = SchemaFactory.createForClass(AlertEvidenceEntry);
+
 @Schema({
   collection: 'normalized_alerts',
   versionKey: false,
-  timestamps: { createdAt: 'createdAt', updatedAt: false },
+  timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
 })
 export class NormalizedAlert {
   @Prop({ required: true, unique: true, index: true })
+  normalizedAlertId!: string;
+
+  @Prop({ required: true, index: true })
   alertId!: string;
 
-  @Prop({ required: true })
-  source!: string;
+  @Prop({ required: true, enum: Object.values(AlertSource), index: true })
+  source!: AlertSource;
 
   @Prop({ required: true, enum: Object.values(AlertType), index: true })
   alertType!: AlertType;
@@ -49,11 +73,17 @@ export class NormalizedAlert {
   @Prop({ required: true })
   title!: string;
 
+  @Prop()
+  description?: string;
+
   @Prop({ required: true, enum: Object.values(Severity), index: true })
   severity!: Severity;
 
-  @Prop({ required: true, min: 0, max: 1 })
+  @Prop({ required: true, min: 0, max: 100 })
   confidence!: number;
+
+  @Prop({ index: true })
+  observedAt?: Date;
 
   @Prop()
   sourceIp?: string;
@@ -76,17 +106,37 @@ export class NormalizedAlert {
   @Prop()
   httpUri?: string;
 
-  @Prop({ type: [SchemaTypes.Mixed], default: [] })
-  evidence!: Record<string, unknown>[];
+  @Prop()
+  username?: string;
+
+  @Prop()
+  hostname?: string;
+
+  @Prop({ index: true })
+  assetId?: string;
 
   @Prop({ type: [AssetContextEntrySchema], default: [] })
   assetContext!: AssetContextEntry[];
 
-  @Prop({ index: true })
-  rawAlertId?: string;
+  @Prop({ type: [AlertEvidenceEntrySchema], default: [] })
+  evidence!: AlertEvidenceEntry[];
+
+  @Prop({
+    required: true,
+    enum: Object.values(NormalizedAlertStatus),
+    default: NormalizedAlertStatus.PENDING,
+    index: true,
+  })
+  normalizationStatus!: NormalizedAlertStatus;
+
+  @Prop({ type: [String], default: [] })
+  normalizationNotes!: string[];
 
   @Prop({ index: true })
   createdAt!: Date;
+
+  @Prop()
+  updatedAt!: Date;
 }
 
 export const NormalizedAlertSchema = SchemaFactory.createForClass(NormalizedAlert);
