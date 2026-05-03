@@ -1,0 +1,26 @@
+{
+  "name": "@soc-soar/shared",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts --clean",
+    "dev": "tsup src/index.ts --format cjs --dts --watch",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@soc-soar/config": "workspace:*",
+    "tsup": "^8.5.0"
+  }
+}

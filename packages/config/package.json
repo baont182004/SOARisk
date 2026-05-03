@@ -1,0 +1,14 @@
+{
+  "name": "@soc-soar/config",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./tsconfig/base": "./tsconfig/base.json",
+    "./tsconfig/nest": "./tsconfig/nest.json",
+    "./tsconfig/next": "./tsconfig/next.json",
+    "./tsconfig/node": "./tsconfig/node.json",
+    "./eslint/base": "./eslint/base.cjs",
+    "./eslint/nest": "./eslint/nest.cjs",
+    "./eslint/next": "./eslint/next.cjs"
+  }
+}
