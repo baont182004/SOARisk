@@ -164,9 +164,3 @@ export class Playbook {
 }
 
 export const PlaybookSchema = SchemaFactory.createForClass(Playbook);
-
-PlaybookSchema.index({ playbookId: 1 }, { unique: true });
-PlaybookSchema.index({ supportedAlertTypes: 1 });
-PlaybookSchema.index({ incidentCategory: 1 });
-PlaybookSchema.index({ status: 1 });
-PlaybookSchema.index({ automationLevel: 1 });

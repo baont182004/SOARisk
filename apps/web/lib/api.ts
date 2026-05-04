@@ -29,3 +29,35 @@ export async function fetchApi<TData>(
 
   return payload as ApiResponse<TData>;
 }
+
+export async function fetchOptionalApi<TData>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiResponse<TData> | null> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  const payload = (await response.json()) as
+    | ApiResponse<TData>
+    | { message?: string; error?: string };
+
+  if (!response.ok) {
+    const errorMessage =
+      'error' in payload
+        ? payload.message ?? payload.error ?? 'API request failed.'
+        : payload.message ?? 'API request failed.';
+
+    throw new Error(errorMessage);
+  }
+
+  return payload as ApiResponse<TData>;
+}

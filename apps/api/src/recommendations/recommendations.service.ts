@@ -116,15 +116,11 @@ export class RecommendationsService {
   }
 
   async findOne(recommendationId: string) {
-    const item = await this.recommendationModel.findOne({ recommendationId }).lean().exec();
-
-    if (!item) {
-      throw new NotFoundException(`Recommendation '${recommendationId}' was not found.`);
-    }
+    const item = await this.findRecommendationDataByIdOrThrow(recommendationId);
 
     return createSuccessResponse(
       'Recommendation retrieved.',
-      this.mapRecommendationForResponse(item as PersistedRecommendation),
+      item,
     );
   }
 
@@ -153,6 +149,16 @@ export class RecommendationsService {
       'Playbook selected for recommendation. No workflow execution was started.',
       this.mapRecommendationForResponse(recommendation.toObject() as PersistedRecommendation),
     );
+  }
+
+  async findRecommendationDataByIdOrThrow(recommendationId: string) {
+    const item = await this.recommendationModel.findOne({ recommendationId }).lean().exec();
+
+    if (!item) {
+      throw new NotFoundException(`Recommendation '${recommendationId}' was not found.`);
+    }
+
+    return this.mapRecommendationForResponse(item as PersistedRecommendation);
   }
 
   private mapRecommendationForResponse(

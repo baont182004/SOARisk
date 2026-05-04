@@ -351,10 +351,172 @@ PowerShell note:
 
 - Use `curl.exe` instead of `curl`.
 
+## Phase 7A: Recommendation Explanation Engine
+
+Purpose:
+
+- Generate deterministic, analyst-readable explanation records from a recommendation result and its related normalized alert.
+- Keep explanation generation fully rule-based and thesis-friendly with no AI or LLM calls.
+
+Key properties:
+
+- Deterministic explanation output from stored recommendation scores and playbook metadata
+- Structured explanation sections for summary, score breakdown, matched conditions, missing fields, approval notes, limitations, and analyst guidance
+- Decision-support only: no workflow execution, no incident creation, and no operational response action
+
+Endpoints:
+
+- `POST /explanations/from-recommendation/:recommendationId`
+- `GET /explanations`
+- `GET /explanations/:explanationId`
+- `GET /explanations/by-recommendation/:recommendationId`
+- `POST /jobs/generate-explanation/:recommendationId`
+
+Manual Phase 7A commands for PowerShell:
+
+Generate recommendation first:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/recommendations/from-normalized/<normalizedAlertId>"
+```
+
+Generate explanation:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/explanations/from-recommendation/<recommendationId>"
+```
+
+List explanations:
+
+```powershell
+curl.exe "http://localhost:3001/explanations?limit=20&page=1"
+```
+
+View explanation:
+
+```powershell
+curl.exe "http://localhost:3001/explanations/<explanationId>"
+```
+
+Find by recommendation:
+
+```powershell
+curl.exe "http://localhost:3001/explanations/by-recommendation/<recommendationId>"
+```
+
+PowerShell note:
+
+- Use `curl.exe` instead of `curl`.
+
+## Phase 8A: Analyst Approval and Workflow Execution Skeleton
+
+Purpose:
+
+- Create a controlled, traceable SOAR workflow skeleton from a selected recommendation and selected playbook.
+- Convert playbook actions into executable workflow steps while keeping every step mock-only.
+
+Workflow behavior:
+
+- `POST /workflows/from-recommendation/:recommendationId` creates a workflow from the selected playbook attached to a selected recommendation.
+- `POST /workflows/:executionId/start` starts or continues sequential mock execution.
+- Safe steps run automatically with mock-only results.
+- Sensitive containment or approval-required steps pause the workflow and create an approval request.
+- Analyst approval continues the mock workflow only. No real external security action is executed.
+- Analyst rejection cancels the workflow and preserves the execution trail.
+
+Safety guardrails:
+
+- No real firewall, EDR, SIEM, isolation, quarantine, disablement, deletion, or notification delivery is performed.
+- Direct dangerous action names remain forbidden and fail the workflow if encountered.
+- Every sensitive step result explicitly states that only a mock request was recorded.
+
+Endpoints:
+
+- `GET /workflows`
+- `GET /workflows/:executionId`
+- `POST /workflows/from-recommendation/:recommendationId`
+- `POST /workflows/:executionId/start`
+- `POST /workflows/:executionId/cancel`
+- `GET /workflows/:executionId/logs`
+- `GET /approvals`
+- `GET /approvals/:approvalId`
+- `POST /approvals/:approvalId/approve`
+- `POST /approvals/:approvalId/reject`
+- `POST /jobs/start-workflow/:executionId`
+
+Manual Phase 8A test sequence for PowerShell:
+
+1. Seed playbooks:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/playbooks/seed"
+```
+
+2. Create a mock port scan alert:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/alerts/mock/port-scan"
+```
+
+3. Normalize the raw alert:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/normalized-alerts/from-raw/<alertId>"
+```
+
+4. Generate a recommendation:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/recommendations/from-normalized/<normalizedAlertId>"
+```
+
+5. Select `PB-002`:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/recommendations/<recommendationId>/select/PB-002"
+```
+
+6. Optionally generate an explanation:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/explanations/from-recommendation/<recommendationId>"
+```
+
+7. Create a workflow:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/workflows/from-recommendation/<recommendationId>"
+```
+
+8. Start the workflow:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/workflows/<executionId>/start"
+```
+
+9. Inspect pending approval requests:
+
+```powershell
+curl.exe "http://localhost:3001/approvals?executionId=<executionId>"
+```
+
+10. Approve the pending mock request:
+
+```powershell
+curl.exe -X POST "http://localhost:3001/approvals/<approvalId>/approve"
+```
+
+11. Inspect workflow logs:
+
+```powershell
+curl.exe "http://localhost:3001/workflows/<executionId>/logs"
+```
+
+PowerShell note:
+
+- Use `curl.exe` instead of `curl`.
+
 ## Next Development Steps
 
-- Recommendation explanation engine
-- Analyst approval flow
-- Workflow execution
-- Incident tracking
+- Incident tracking and timeline integration
 - Report generation

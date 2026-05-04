@@ -11,7 +11,7 @@ export default function RecommendationsPage() {
         description="This area presents deterministic playbook recommendations ranked from normalized alerts and structured playbook metadata."
       />
       <RecommendationsTable />
-      <FutureNote note="Recommendation scoring is deterministic and thesis-friendly in Phase 6A. The fuller explanation engine comes later." />
+      <FutureNote note="Recommendation scoring and explanation generation are deterministic in Phases 6A and 7A. Analyst approval and workflow execution remain later phases." />
     </>
   );
 }

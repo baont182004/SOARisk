@@ -4,6 +4,8 @@ export const navigationItems = [
   { href: '/normalized-alerts', label: 'Normalized Alerts' },
   { href: '/playbooks', label: 'Playbooks' },
   { href: '/recommendations', label: 'Recommendations' },
+  { href: '/explanations', label: 'Explanations' },
+  { href: '/approvals', label: 'Approvals' },
   { href: '/incidents', label: 'Incidents' },
   { href: '/workflows', label: 'Workflows' },
   { href: '/reports', label: 'Reports' },

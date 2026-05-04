@@ -18,6 +18,7 @@ export const queues = {
     connection,
   }),
   recommendationQueue: new Queue(QUEUE_NAMES.RECOMMENDATION, { connection }),
+  explanationQueue: new Queue(QUEUE_NAMES.EXPLANATION, { connection }),
   workflowExecutionQueue: new Queue(QUEUE_NAMES.WORKFLOW_EXECUTION, {
     connection,
   }),

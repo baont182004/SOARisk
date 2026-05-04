@@ -2,6 +2,9 @@ import {
   AlertType,
   ApprovalStatus,
   AutomationLevel,
+  ExplanationSectionType,
+  ExplanationStatus,
+  ExplanationRiskLevel,
   type JobCatalog,
   type RecommendationExplanation,
   IncidentStatus,
@@ -13,8 +16,9 @@ import {
 
 import { generateIdentifier } from './query.util';
 
-type MockRecommendationExplanation = Omit<RecommendationExplanation, 'createdAt'> & {
+type MockRecommendationExplanation = Omit<RecommendationExplanation, 'createdAt' | 'updatedAt'> & {
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export function createMockRawAlert() {
@@ -193,9 +197,41 @@ export function createMockExplanation(): MockRecommendationExplanation {
   return {
     explanationId: generateIdentifier('EXP'),
     recommendationId: generateIdentifier('REC'),
+    normalizedAlertId: generateIdentifier('NAL'),
+    alertId: generateIdentifier('ALERT'),
+    topPlaybookId: 'PB-002',
+    status: ExplanationStatus.GENERATED,
     summary:
       'Explanation placeholders will later describe why a playbook was chosen and what evidence supported the match.',
+    sections: [
+      {
+        type: ExplanationSectionType.SUMMARY,
+        title: 'Recommendation Summary',
+        content:
+          'This placeholder explanation exists only for fallback testing and is not used once the explanation engine is seeded by live recommendations.',
+        severity: ExplanationRiskLevel.LOW,
+      },
+    ],
+    playbookExplanations: [
+      {
+        playbookId: 'PB-002',
+        rank: 1,
+        totalScore: 100,
+        decision: 'recommended',
+        summary: 'Placeholder explanation summary for PB-002.',
+        scoreExplanation: ['Alert type score: 35. Placeholder explanation.'],
+        matchedReasons: ['Exact alert type match for port_scan.'],
+        missingFields: [],
+        approvalNotes: [
+          'Sensitive response steps remain mock-only and require analyst approval.',
+        ],
+        limitations: ['This placeholder explanation does not execute any response action.'],
+      },
+    ],
+    limitations: ['This placeholder explanation is deterministic and non-operational.'],
+    analystGuidance: ['Review the normalized alert before selecting a playbook.'],
     createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 

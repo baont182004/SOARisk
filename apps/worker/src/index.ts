@@ -4,6 +4,7 @@ import { QueueEvents } from 'bullmq';
 
 import { connectToDatabase, disconnectFromDatabase } from './db';
 import { createAlertNormalizationWorker } from './processors/alert-normalization.processor';
+import { createExplanationWorker } from './processors/explanation.processor';
 import { createPcapDemoWorker } from './processors/pcap-demo.processor';
 import { createRecommendationWorker } from './processors/recommendation.processor';
 import { createReportGenerationWorker } from './processors/report-generation.processor';
@@ -23,6 +24,7 @@ async function bootstrap() {
     createPcapDemoWorker(),
     createAlertNormalizationWorker(),
     createRecommendationWorker(),
+    createExplanationWorker(),
     createWorkflowExecutionWorker(),
     createReportGenerationWorker(),
   ];

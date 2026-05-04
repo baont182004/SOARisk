@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { AlertsModule } from '../alerts/alerts.module';
 import { NormalizedAlertsModule } from '../normalized-alerts/normalized-alerts.module';
+import { RecommendationsModule } from '../recommendations/recommendations.module';
+import { WorkflowsModule } from '../workflows/workflows.module';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
 
 @Module({
-  imports: [AlertsModule, NormalizedAlertsModule],
+  imports: [AlertsModule, NormalizedAlertsModule, RecommendationsModule, WorkflowsModule],
   controllers: [JobsController],
   providers: [JobsService],
 })

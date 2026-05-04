@@ -1,25 +1,36 @@
 import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import {
+  GENERATE_EXPLANATION_JOB_NAME,
   QUEUE_NAMES,
   NORMALIZE_ALERT_JOB_NAME,
   RECOMMEND_PLAYBOOKS_JOB_NAME,
+  START_WORKFLOW_JOB_NAME,
+  buildGenerateExplanationJobId,
   buildNormalizeAlertJobId,
   buildRecommendPlaybooksJobId,
+  buildStartWorkflowJobId,
+  type GenerateExplanationJobData,
+  type GenerateExplanationQueuedResponse,
   type NormalizeAlertJobData,
   type NormalizeAlertJobResult,
   type NormalizeAlertJobStatusSnapshot,
   type NormalizeAlertQueuedResponse,
   type RecommendPlaybooksJobData,
   type RecommendPlaybooksQueuedResponse,
+  type StartWorkflowJobData,
+  type StartWorkflowQueuedResponse,
 } from '@soc-soar/shared';
 import { Job, Queue } from 'bullmq';
 
 import { AlertsService } from '../alerts/alerts.service';
 import { createSuccessResponse } from '../common/api-response.util';
 import { createMockJobCatalog } from '../common/mock-data';
+import { GenerateExplanationQueryDto } from '../explanations/dto/generate-explanation-query.dto';
 import { NormalizeAlertQueryDto } from '../normalized-alerts/dto/normalize-alert-query.dto';
 import { NormalizedAlertsService } from '../normalized-alerts/normalized-alerts.service';
 import { GenerateRecommendationQueryDto } from '../recommendations/dto/generate-recommendation-query.dto';
+import { RecommendationsService } from '../recommendations/recommendations.service';
+import { WorkflowsService } from '../workflows/workflows.service';
 
 @Injectable()
 export class JobsService implements OnModuleDestroy {
@@ -43,10 +54,32 @@ export class JobsService implements OnModuleDestroy {
       port: Number(process.env.REDIS_PORT ?? 6379),
     },
   });
+  private readonly explanationQueue = new Queue<
+    GenerateExplanationJobData,
+    { status: 'placeholder' },
+    typeof GENERATE_EXPLANATION_JOB_NAME
+  >(QUEUE_NAMES.EXPLANATION, {
+    connection: {
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    },
+  });
+  private readonly workflowExecutionQueue = new Queue<
+    StartWorkflowJobData,
+    { status: 'placeholder' },
+    typeof START_WORKFLOW_JOB_NAME
+  >(QUEUE_NAMES.WORKFLOW_EXECUTION, {
+    connection: {
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    },
+  });
 
   constructor(
     private readonly alertsService: AlertsService,
     private readonly normalizedAlertsService: NormalizedAlertsService,
+    private readonly recommendationsService: RecommendationsService,
+    private readonly workflowsService: WorkflowsService,
   ) {}
 
   findAll() {
@@ -65,8 +98,12 @@ export class JobsService implements OnModuleDestroy {
           purpose: 'Queued playbook recommendation generation placeholder.',
         },
         {
+          name: QUEUE_NAMES.EXPLANATION,
+          purpose: 'Queued recommendation explanation generation placeholder.',
+        },
+        {
           name: QUEUE_NAMES.WORKFLOW_EXECUTION,
-          purpose: 'Future workflow orchestration pipeline.',
+          purpose: 'Queued workflow start placeholder for later async orchestration.',
         },
         {
           name: QUEUE_NAMES.REPORT_GENERATION,
@@ -78,79 +115,183 @@ export class JobsService implements OnModuleDestroy {
   }
 
   async enqueueAlertNormalization(alertId: string, query: NormalizeAlertQueryDto) {
-    await this.alertsService.findRawAlertDocumentByAlertIdOrThrow(alertId);
+    try {
+      await this.alertsService.findRawAlertDocumentByAlertIdOrThrow(alertId);
 
-    const force = query.force === true;
-    const requestedAt = new Date().toISOString();
-    const jobId = force
-      ? `${buildNormalizeAlertJobId(alertId)}:${Date.now()}`
-      : buildNormalizeAlertJobId(alertId);
-    const jobData: NormalizeAlertJobData = {
-      alertId,
-      force,
-      requestedAt,
-    };
-    const existingJob = force ? null : await this.alertNormalizationQueue.getJob(jobId);
-    const job =
-      existingJob ??
-      (await this.alertNormalizationQueue.add(NORMALIZE_ALERT_JOB_NAME, jobData, {
-        jobId,
-      }));
+      const force = query.force === true;
+      const requestedAt = new Date().toISOString();
+      const jobId = force
+        ? `${buildNormalizeAlertJobId(alertId)}__${Date.now()}`
+        : buildNormalizeAlertJobId(alertId);
+      const jobData: NormalizeAlertJobData = {
+        alertId,
+        force,
+        requestedAt,
+      };
+      const existingJob = force ? null : await this.alertNormalizationQueue.getJob(jobId);
+      const job =
+        existingJob ??
+        (await this.alertNormalizationQueue.add(NORMALIZE_ALERT_JOB_NAME, jobData, {
+          jobId,
+        }));
 
-    console.log(`[jobs] queued normalization job for alertId=${alertId} jobId=${String(job.id)}`);
+      console.log(
+        `[jobs] queued normalization job for alertId=${alertId} jobId=${String(job.id)}`,
+      );
 
-    const response: NormalizeAlertQueuedResponse = {
-      jobId: String(job.id),
-      queueName: QUEUE_NAMES.ALERT_NORMALIZATION,
-      jobName: job.name,
-      alertId,
-      force,
-      status: 'queued',
-    };
+      const response: NormalizeAlertQueuedResponse = {
+        jobId: String(job.id),
+        queueName: QUEUE_NAMES.ALERT_NORMALIZATION,
+        jobName: job.name,
+        alertId,
+        force,
+        status: 'queued',
+      };
 
-    return createSuccessResponse('Alert normalization job queued successfully.', response);
+      return createSuccessResponse('Alert normalization job queued successfully.', response);
+    } catch (error) {
+      console.error(`[jobs] failed to queue normalization job for alertId=${alertId}`, error);
+      throw error;
+    }
   }
 
   async enqueuePlaybookRecommendation(
     normalizedAlertId: string,
     query: GenerateRecommendationQueryDto,
   ) {
-    await this.normalizedAlertsService.findNormalizedAlertDataByIdOrThrow(normalizedAlertId);
+    try {
+      await this.normalizedAlertsService.findNormalizedAlertDataByIdOrThrow(normalizedAlertId);
 
-    const topK = query.topK ?? 3;
-    const force = query.force === true;
-    const requestedAt = new Date().toISOString();
-    const jobId = force
-      ? `${buildRecommendPlaybooksJobId(normalizedAlertId)}:${Date.now()}`
-      : buildRecommendPlaybooksJobId(normalizedAlertId);
-    const jobData: RecommendPlaybooksJobData = {
-      normalizedAlertId,
-      topK,
-      force,
-      requestedAt,
-    };
-    const existingJob = force ? null : await this.recommendationQueue.getJob(jobId);
-    const job =
-      existingJob ??
-      (await this.recommendationQueue.add(RECOMMEND_PLAYBOOKS_JOB_NAME, jobData, {
-        jobId,
-      }));
+      const topK = query.topK ?? 3;
+      const force = query.force === true;
+      const requestedAt = new Date().toISOString();
+      const jobId = force
+        ? `${buildRecommendPlaybooksJobId(normalizedAlertId)}__${Date.now()}`
+        : buildRecommendPlaybooksJobId(normalizedAlertId);
+      const jobData: RecommendPlaybooksJobData = {
+        normalizedAlertId,
+        topK,
+        force,
+        requestedAt,
+      };
+      const existingJob = force ? null : await this.recommendationQueue.getJob(jobId);
+      const job =
+        existingJob ??
+        (await this.recommendationQueue.add(RECOMMEND_PLAYBOOKS_JOB_NAME, jobData, {
+          jobId,
+        }));
 
-    console.log(
-      `[jobs] queued recommendation job for normalizedAlertId=${normalizedAlertId} jobId=${String(job.id)}`,
-    );
+      console.log(
+        `[jobs] queued recommendation job for normalizedAlertId=${normalizedAlertId} jobId=${String(job.id)}`,
+      );
 
-    const response: RecommendPlaybooksQueuedResponse = {
-      jobId: String(job.id),
-      queueName: QUEUE_NAMES.RECOMMENDATION,
-      jobName: job.name,
-      normalizedAlertId,
-      topK,
-      force,
-      status: 'queued',
-    };
+      const response: RecommendPlaybooksQueuedResponse = {
+        jobId: String(job.id),
+        queueName: QUEUE_NAMES.RECOMMENDATION,
+        jobName: job.name,
+        normalizedAlertId,
+        topK,
+        force,
+        status: 'queued',
+      };
 
-    return createSuccessResponse('Playbook recommendation job queued successfully.', response);
+      return createSuccessResponse('Playbook recommendation job queued successfully.', response);
+    } catch (error) {
+      console.error(
+        `[jobs] failed to queue recommendation job for normalizedAlertId=${normalizedAlertId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async enqueueRecommendationExplanation(
+    recommendationId: string,
+    query: GenerateExplanationQueryDto,
+  ) {
+    try {
+      await this.recommendationsService.findRecommendationDataByIdOrThrow(recommendationId);
+
+      const force = query.force === true;
+      const requestedAt = new Date().toISOString();
+      const jobId = force
+        ? `${buildGenerateExplanationJobId(recommendationId)}__${Date.now()}`
+        : buildGenerateExplanationJobId(recommendationId);
+      const jobData: GenerateExplanationJobData = {
+        recommendationId,
+        force,
+        requestedAt,
+      };
+      const existingJob = force ? null : await this.explanationQueue.getJob(jobId);
+      const job =
+        existingJob ??
+        (await this.explanationQueue.add(GENERATE_EXPLANATION_JOB_NAME, jobData, {
+          jobId,
+        }));
+
+      console.log(
+        `[jobs] queued explanation job for recommendationId=${recommendationId} jobId=${String(job.id)}`,
+      );
+
+      const response: GenerateExplanationQueuedResponse = {
+        jobId: String(job.id),
+        queueName: QUEUE_NAMES.EXPLANATION,
+        jobName: job.name,
+        recommendationId,
+        force,
+        status: 'queued',
+      };
+
+      return createSuccessResponse(
+        'Recommendation explanation job queued successfully.',
+        response,
+      );
+    } catch (error) {
+      console.error(
+        `[jobs] failed to queue explanation job for recommendationId=${recommendationId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async enqueueWorkflowStart(executionId: string) {
+    try {
+      await this.workflowsService.findWorkflowExecutionDataByIdOrThrow(executionId);
+
+      const requestedAt = new Date().toISOString();
+      const jobId = buildStartWorkflowJobId(executionId);
+      const jobData: StartWorkflowJobData = {
+        executionId,
+        requestedAt,
+      };
+      const existingJob = await this.workflowExecutionQueue.getJob(jobId);
+      const job =
+        existingJob ??
+        (await this.workflowExecutionQueue.add(START_WORKFLOW_JOB_NAME, jobData, {
+          jobId,
+        }));
+
+      console.log(
+        `[jobs] queued workflow start job for executionId=${executionId} jobId=${String(job.id)}`,
+      );
+
+      const response: StartWorkflowQueuedResponse = {
+        jobId: String(job.id),
+        queueName: QUEUE_NAMES.WORKFLOW_EXECUTION,
+        jobName: job.name,
+        executionId,
+        status: 'queued',
+      };
+
+      return createSuccessResponse('Workflow start job queued successfully.', response);
+    } catch (error) {
+      console.error(
+        `[jobs] failed to queue workflow start job for executionId=${executionId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   async findAlertNormalizationJob(jobId: string) {
@@ -172,7 +313,12 @@ export class JobsService implements OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await Promise.all([this.alertNormalizationQueue.close(), this.recommendationQueue.close()]);
+    await Promise.all([
+      this.alertNormalizationQueue.close(),
+      this.recommendationQueue.close(),
+      this.explanationQueue.close(),
+      this.workflowExecutionQueue.close(),
+    ]);
   }
 
   private async getAlertNormalizationJobOrThrow(jobId: string) {

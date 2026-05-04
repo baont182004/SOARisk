@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 
+import { GenerateExplanationQueryDto } from '../explanations/dto/generate-explanation-query.dto';
 import { NormalizeAlertQueryDto } from '../normalized-alerts/dto/normalize-alert-query.dto';
 import { GenerateRecommendationQueryDto } from '../recommendations/dto/generate-recommendation-query.dto';
 import { JobsService } from './jobs.service';
@@ -37,5 +38,18 @@ export class JobsController {
     @Query() query: GenerateRecommendationQueryDto,
   ) {
     return this.jobsService.enqueuePlaybookRecommendation(normalizedAlertId, query);
+  }
+
+  @Post('generate-explanation/:recommendationId')
+  enqueueRecommendationExplanation(
+    @Param('recommendationId') recommendationId: string,
+    @Query() query: GenerateExplanationQueryDto,
+  ) {
+    return this.jobsService.enqueueRecommendationExplanation(recommendationId, query);
+  }
+
+  @Post('start-workflow/:executionId')
+  enqueueWorkflowStart(@Param('executionId') executionId: string) {
+    return this.jobsService.enqueueWorkflowStart(executionId);
   }
 }

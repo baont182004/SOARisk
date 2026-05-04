@@ -2,9 +2,14 @@ import type {
   AlertType,
   AlertSource,
   ApprovalPolicy,
+  ApprovalStatus,
   AutomationLevel,
+  ExecutionLogLevel,
   IncidentStatus,
   IncidentCategory,
+  ExplanationRiskLevel,
+  ExplanationSectionType,
+  ExplanationStatus,
   NormalizedAlertStatus,
   PcapFileStatus,
   PcapJobStatus,
@@ -14,6 +19,7 @@ import type {
   RecommendationStatus,
   Severity,
   WorkflowExecutionStatus,
+  WorkflowStepStatus,
 } from './enums';
 
 export interface ApiCollectionMeta {
@@ -245,12 +251,50 @@ export interface PlaybookRecommendationResult {
 
 export type Recommendation = PlaybookRecommendationResult;
 
+export type PlaybookExplanationDecision = 'recommended' | 'alternative' | 'not_selected';
+
+export interface ExplanationSection {
+  type: ExplanationSectionType;
+  title: string;
+  content: string;
+  evidenceRefs?: string[];
+  severity?: ExplanationRiskLevel;
+}
+
+export interface PlaybookExplanation {
+  playbookId: string;
+  rank: number;
+  totalScore: number;
+  decision: PlaybookExplanationDecision;
+  summary: string;
+  scoreExplanation: string[];
+  matchedReasons: string[];
+  missingFields: string[];
+  approvalNotes: string[];
+  limitations: string[];
+}
+
 export interface RecommendationExplanation {
   explanationId: string;
   recommendationId: string;
+  normalizedAlertId: string;
+  alertId: string;
+  selectedPlaybookId?: string;
+  topPlaybookId: string;
+  status: ExplanationStatus;
   summary: string;
-  createdAt: string;
+  sections: ExplanationSection[];
+  playbookExplanations: PlaybookExplanation[];
+  limitations: string[];
+  analystGuidance: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export type RecommendationExplanationDraft = Omit<
+  RecommendationExplanation,
+  'explanationId' | 'createdAt' | 'updatedAt'
+>;
 
 export interface IncidentTimelineEntry {
   timestamp: string;
@@ -273,22 +317,57 @@ export interface Incident {
 
 export interface WorkflowExecution {
   executionId: string;
-  incidentId: string;
+  recommendationId: string;
+  normalizedAlertId: string;
+  alertId: string;
   playbookId: string;
   status: WorkflowExecutionStatus;
   currentStep: number;
+  steps: WorkflowStep[];
   startedAt?: string;
   finishedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WorkflowStep {
+  step: number;
+  action: string;
+  type: string;
+  description: string;
+  approvalRequired: boolean;
+  approvalStatus: ApprovalStatus;
+  risk: string;
+  mockOnly: boolean;
+  status: WorkflowStepStatus;
+  startedAt?: string;
+  finishedAt?: string;
+  result?: string;
 }
 
 export interface ExecutionLog {
+  logId: string;
+  executionId: string;
+  step?: number;
+  action?: string;
+  level: ExecutionLogLevel;
+  message: string;
+  createdAt?: string;
+}
+
+export interface ApprovalRequest {
+  approvalId: string;
   executionId: string;
   step: number;
   action: string;
-  status: WorkflowExecutionStatus;
-  message: string;
-  startedAt?: string;
-  finishedAt?: string;
+  risk: string;
+  status: ApprovalStatus;
+  requestedAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  decisionReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Report {

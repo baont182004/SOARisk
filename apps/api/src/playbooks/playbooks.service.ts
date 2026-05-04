@@ -62,15 +62,11 @@ export class PlaybooksService {
   }
 
   async findOne(playbookId: string) {
-    const item = await this.playbookModel.findOne({ playbookId }).lean().exec();
-
-    if (!item) {
-      throw new NotFoundException(`Playbook '${playbookId}' was not found.`);
-    }
+    const item = await this.findPlaybookDataByIdOrThrow(playbookId);
 
     return createSuccessResponse(
       'Playbook retrieved.',
-      this.mapPlaybookForResponse(item as PersistedPlaybook),
+      item,
     );
   }
 
@@ -110,6 +106,30 @@ export class PlaybooksService {
     const items = await this.loadSharedPlaybooks();
 
     return items.filter((playbook) => playbook.status === 'active');
+  }
+
+  async findPlaybooksDataByIds(playbookIds: string[]) {
+    if (playbookIds.length === 0) {
+      return [];
+    }
+
+    const items = await this.playbookModel
+      .find({ playbookId: { $in: [...new Set(playbookIds)] } })
+      .sort({ playbookId: 1 })
+      .lean()
+      .exec();
+
+    return items.map((item) => this.mapPlaybookForResponse(item as PersistedPlaybook));
+  }
+
+  async findPlaybookDataByIdOrThrow(playbookId: string) {
+    const item = await this.playbookModel.findOne({ playbookId }).lean().exec();
+
+    if (!item) {
+      throw new NotFoundException(`Playbook '${playbookId}' was not found.`);
+    }
+
+    return this.mapPlaybookForResponse(item as PersistedPlaybook);
   }
 
   private async upsertSeedPlaybooks() {

@@ -100,19 +100,64 @@ export enum ApprovalStatus {
   REJECTED = 'rejected',
 }
 
+export enum ApprovalDecision {
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 export enum RecommendationStatus {
   GENERATED = 'generated',
   SELECTED = 'selected',
   EXPIRED = 'expired',
 }
 
+export enum ExplanationStatus {
+  GENERATED = 'generated',
+  STALE = 'stale',
+}
+
+export enum ExplanationRiskLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+}
+
+export enum ExplanationSectionType {
+  SUMMARY = 'summary',
+  SCORE_BREAKDOWN = 'score_breakdown',
+  MATCHED_CONDITIONS = 'matched_conditions',
+  MISSING_FIELDS = 'missing_fields',
+  APPROVAL_REQUIRED = 'approval_required',
+  LIMITATIONS = 'limitations',
+  ANALYST_GUIDANCE = 'analyst_guidance',
+}
+
 export enum WorkflowExecutionStatus {
   PENDING = 'pending',
   RUNNING = 'running',
   WAITING_APPROVAL = 'waiting_approval',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
   SUCCESS = 'success',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
+}
+
+export enum WorkflowStepStatus {
+  PENDING = 'pending',
+  RUNNING = 'running',
+  WAITING_APPROVAL = 'waiting_approval',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  SKIPPED = 'skipped',
+}
+
+export enum ExecutionLogLevel {
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
 }
 
 export enum PcapFileStatus {

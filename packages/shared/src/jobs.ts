@@ -4,6 +4,10 @@ export const NORMALIZE_ALERT_JOB_NAME = 'normalize-alert';
 export const NORMALIZE_ALERT_QUEUE_NAME = QUEUE_NAMES.ALERT_NORMALIZATION;
 export const RECOMMEND_PLAYBOOKS_JOB_NAME = 'recommend-playbooks';
 export const RECOMMEND_PLAYBOOKS_QUEUE_NAME = QUEUE_NAMES.RECOMMENDATION;
+export const GENERATE_EXPLANATION_JOB_NAME = 'generate-explanation';
+export const GENERATE_EXPLANATION_QUEUE_NAME = QUEUE_NAMES.EXPLANATION;
+export const START_WORKFLOW_JOB_NAME = 'start-workflow';
+export const START_WORKFLOW_QUEUE_NAME = QUEUE_NAMES.WORKFLOW_EXECUTION;
 
 export interface NormalizeAlertJobData {
   alertId: string;
@@ -71,10 +75,46 @@ export interface RecommendPlaybooksQueuedResponse {
   status: 'queued';
 }
 
+export interface GenerateExplanationJobData {
+  recommendationId: string;
+  force?: boolean;
+  requestedAt: string;
+}
+
+export interface GenerateExplanationQueuedResponse {
+  jobId: string;
+  queueName: typeof GENERATE_EXPLANATION_QUEUE_NAME;
+  jobName: typeof GENERATE_EXPLANATION_JOB_NAME;
+  recommendationId: string;
+  force: boolean;
+  status: 'queued';
+}
+
+export interface StartWorkflowJobData {
+  executionId: string;
+  requestedAt: string;
+}
+
+export interface StartWorkflowQueuedResponse {
+  jobId: string;
+  queueName: typeof START_WORKFLOW_QUEUE_NAME;
+  jobName: typeof START_WORKFLOW_JOB_NAME;
+  executionId: string;
+  status: 'queued';
+}
+
 export function buildNormalizeAlertJobId(alertId: string) {
-  return `${NORMALIZE_ALERT_JOB_NAME}:${alertId}`;
+  return `${NORMALIZE_ALERT_JOB_NAME}__${alertId}`;
 }
 
 export function buildRecommendPlaybooksJobId(normalizedAlertId: string) {
-  return `${RECOMMEND_PLAYBOOKS_JOB_NAME}:${normalizedAlertId}`;
+  return `${RECOMMEND_PLAYBOOKS_JOB_NAME}__${normalizedAlertId}`;
+}
+
+export function buildGenerateExplanationJobId(recommendationId: string) {
+  return `${GENERATE_EXPLANATION_JOB_NAME}__${recommendationId}`;
+}
+
+export function buildStartWorkflowJobId(executionId: string) {
+  return `${START_WORKFLOW_JOB_NAME}__${executionId}`;
 }

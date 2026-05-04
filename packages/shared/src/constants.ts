@@ -49,6 +49,7 @@ export const QUEUE_NAMES = {
   PCAP_DEMO: 'pcap-demo-queue',
   ALERT_NORMALIZATION: 'alert-normalization-queue',
   RECOMMENDATION: 'recommendation-queue',
+  EXPLANATION: 'explanation-queue',
   WORKFLOW_EXECUTION: 'workflow-execution-queue',
   REPORT_GENERATION: 'report-generation-queue',
 } as const;
@@ -99,3 +100,16 @@ export const RECOMMENDATION_SCORE_WEIGHTS = {
   conditions: 15,
   automation: 5,
 } as const;
+
+export const EXPLANATION_DEFAULT_LIMITATIONS = [
+  'This recommendation is based on normalized alert fields and playbook metadata.',
+  'It does not prove attacker intent.',
+  'It does not execute response actions.',
+  'Analyst review is required before operational action.',
+] as const;
+
+export const EXPLANATION_DEFAULT_ANALYST_GUIDANCE = [
+  'Review source and target context before selecting a playbook.',
+  'Confirm whether the affected asset is internet-facing or business-critical.',
+  'Check whether similar alerts exist before approving containment requests.',
+] as const;

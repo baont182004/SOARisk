@@ -1,7 +1,6 @@
-import { EmptyState } from '../../components/empty-state';
 import { FutureNote } from '../../components/future-note';
 import { PageIntro } from '../../components/page-intro';
-import { PlaceholderTable } from '../../components/placeholder-table';
+import { WorkflowsTable } from '../../components/workflows-table';
 
 export default function WorkflowsPage() {
   return (
@@ -9,14 +8,10 @@ export default function WorkflowsPage() {
       <PageIntro
         title="Workflows"
         role="Orchestration"
-        description="This section represents workflow execution state after analyst approval. In this initialization phase, execution remains mock-only and no real response action is performed."
+        description="This section shows mock-only workflow executions created from selected recommendations. Safe steps run automatically, while sensitive containment requests pause for analyst approval."
       />
-      <PlaceholderTable
-        title="Workflow Executions"
-        columns={['Execution ID', 'Incident ID', 'Playbook ID', 'Status', 'Current Step']}
-      />
-      <EmptyState message="No workflow execution cards are populated yet. Future phases will surface step status and execution logs." />
-      <FutureNote note="Any future containment, blocking, or isolation action should stay behind explicit analyst approval gates." />
+      <WorkflowsTable />
+      <FutureNote note="Workflow execution in Phase 8A is mock-only. Sensitive steps pause for approval, and no real containment or response action is executed." />
     </>
   );
 }
