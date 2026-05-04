@@ -1,3 +1,5 @@
+import { AlertType } from './enums';
+
 export const SOAR_WORKFLOW_STEPS = [
   'Security Alert',
   'Alert Normalization',
@@ -68,4 +70,32 @@ export const SEED_PLAYBOOK_IDS = [
   'PB-006',
   'PB-007',
   'PB-008',
+  'PB-009',
+  'PB-010',
 ] as const;
+
+export const CORE_PLAYBOOK_ALERT_TYPES = [
+  AlertType.PORT_SCAN,
+  AlertType.ICMP_FLOOD,
+  AlertType.WEB_SQL_INJECTION,
+  AlertType.WEB_XSS,
+  AlertType.SUSPICIOUS_DNS_QUERY,
+] as const;
+
+export const FORBIDDEN_PLAYBOOK_ACTION_NAMES = [
+  'block_ip',
+  'quarantine_host',
+  'delete_file',
+  'disable_user',
+  'kill_process',
+  'execute_script_on_host',
+] as const;
+
+export const RECOMMENDATION_SCORE_WEIGHTS = {
+  alertType: 35,
+  requiredFields: 20,
+  severity: 15,
+  assetContext: 10,
+  conditions: 15,
+  automation: 5,
+} as const;

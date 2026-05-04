@@ -10,7 +10,7 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
       <PageIntro
         title={`Alert ${id}`}
         role="Alert Detail"
-        description="This page shows a raw alert record, the original payload, and the first SOAR processing action: deterministic normalization into a unified alert schema."
+        description="This page shows a raw alert record, the original payload, and both normalization paths used in the thesis: direct synchronous testing and worker-backed asynchronous processing."
       />
       <RawAlertDetail alertId={id} />
       <FutureNote note="This route should later support both analyst-friendly summaries and raw evidence traceability." />

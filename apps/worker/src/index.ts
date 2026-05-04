@@ -1,5 +1,8 @@
+import 'dotenv/config';
+
 import { QueueEvents } from 'bullmq';
 
+import { connectToDatabase, disconnectFromDatabase } from './db';
 import { createAlertNormalizationWorker } from './processors/alert-normalization.processor';
 import { createPcapDemoWorker } from './processors/pcap-demo.processor';
 import { createRecommendationWorker } from './processors/recommendation.processor';
@@ -9,6 +12,13 @@ import { workerConfig } from './config';
 import { queueConnection, queues } from './queues';
 
 async function bootstrap() {
+  await connectToDatabase();
+  await queueConnection.ping();
+
+  console.log(
+    `[worker] connected to Redis at ${workerConfig.redisHost}:${workerConfig.redisPort}.`,
+  );
+
   const workers = [
     createPcapDemoWorker(),
     createAlertNormalizationWorker(),
@@ -28,10 +38,6 @@ async function bootstrap() {
     console.log(`Queue ready: ${queue.name}`);
   }
 
-  console.log(
-    `Redis connection configured for ${workerConfig.redisHost}:${workerConfig.redisPort}.`,
-  );
-
   for (const worker of workers) {
     worker.on('completed', (job) => {
       console.log(`[${worker.name}] completed job ${job.id}`);
@@ -42,12 +48,21 @@ async function bootstrap() {
     });
   }
 
+  let shuttingDown = false;
+
   const shutdown = async () => {
+    if (shuttingDown) {
+      return;
+    }
+
+    shuttingDown = true;
+
     await Promise.all([
       ...workers.map((worker) => worker.close()),
       ...queueEvents.map((events) => events.close()),
       ...Object.values(queues).map((queue) => queue.close()),
     ]);
+    await disconnectFromDatabase();
     await queueConnection.quit();
     process.exit(0);
   };
@@ -56,7 +71,7 @@ async function bootstrap() {
   process.on('SIGTERM', shutdown);
 
   console.log(
-    'SOC SOAR worker started with placeholder processors. No real containment or blocking logic is implemented.',
+    'SOC SOAR worker started. Alert normalization is worker-backed; containment and blocking remain out of scope.',
   );
 }
 

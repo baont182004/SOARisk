@@ -201,7 +201,7 @@ export function createMockExplanation(): MockRecommendationExplanation {
 
 export function createMockJobCatalog(): JobCatalog {
   return {
-    mode: 'placeholder',
+    mode: 'worker_backed_normalization',
     defaultAutomationLevel: AutomationLevel.SEMI_AUTOMATED,
   };
 }

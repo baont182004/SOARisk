@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { GenerateRecommendationButton } from './generate-recommendation-button';
 
 export function NormalizedAlertsTable() {
   const [alerts, setAlerts] = useState<NormalizedAlert[]>([]);
@@ -95,6 +96,7 @@ export function NormalizedAlertsTable() {
               <th className="px-3 py-3 font-semibold">Confidence</th>
               <th className="px-3 py-3 font-semibold">Status</th>
               <th className="px-3 py-3 font-semibold">Created At</th>
+              <th className="px-3 py-3 font-semibold">Recommendation</th>
             </tr>
           </thead>
           <tbody>
@@ -114,6 +116,9 @@ export function NormalizedAlertsTable() {
                 <td className="px-3 py-3">{alert.confidence}%</td>
                 <td className="px-3 py-3">{alert.normalizationStatus}</td>
                 <td className="px-3 py-3">{new Date(alert.createdAt).toLocaleString()}</td>
+                <td className="px-3 py-3">
+                  <GenerateRecommendationButton normalizedAlertId={alert.normalizedAlertId} />
+                </td>
               </tr>
             ))}
           </tbody>

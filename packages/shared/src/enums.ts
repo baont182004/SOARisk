@@ -50,11 +50,60 @@ export enum AutomationLevel {
   AUTOMATED = 'automated',
 }
 
+export enum IncidentCategory {
+  GENERIC = 'generic',
+  RECONNAISSANCE = 'reconnaissance',
+  DENIAL_OF_SERVICE = 'denial_of_service',
+  WEB_ATTACK = 'web_attack',
+  SUSPICIOUS_DNS = 'suspicious_dns',
+  MALWARE = 'malware',
+  BRUTE_FORCE = 'brute_force',
+  PHISHING = 'phishing',
+  SUSPICIOUS_FILE = 'suspicious_file',
+  DATA_EXFILTRATION = 'data_exfiltration',
+}
+
+export enum PlaybookActionType {
+  CASE_MANAGEMENT = 'case_management',
+  ENRICHMENT = 'enrichment',
+  ASSET_CONTEXT = 'asset_context',
+  INVESTIGATION = 'investigation',
+  CONTAINMENT = 'containment',
+  NOTIFICATION = 'notification',
+  APPROVAL = 'approval',
+  REPORTING = 'reporting',
+  DOCUMENTATION = 'documentation',
+}
+
+export enum PlaybookStepRisk {
+  SAFE = 'safe',
+  REVIEW_REQUIRED = 'review_required',
+  SENSITIVE = 'sensitive',
+}
+
+export enum PlaybookStatus {
+  DRAFT = 'draft',
+  ACTIVE = 'active',
+  DEPRECATED = 'deprecated',
+}
+
+export enum ApprovalPolicy {
+  NONE = 'none',
+  REQUIRED_FOR_SENSITIVE_ACTIONS = 'required_for_sensitive_actions',
+  REQUIRED_FOR_ALL_ACTIONS = 'required_for_all_actions',
+}
+
 export enum ApprovalStatus {
   NOT_REQUIRED = 'not_required',
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+}
+
+export enum RecommendationStatus {
+  GENERATED = 'generated',
+  SELECTED = 'selected',
+  EXPIRED = 'expired',
 }
 
 export enum WorkflowExecutionStatus {

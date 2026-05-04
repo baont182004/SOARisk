@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
-import type { RawAlert as SharedRawAlert } from '@soc-soar/shared';
+import type {
+  NormalizedAlert as SharedNormalizedAlert,
+  RawAlert as SharedRawAlert,
+} from '@soc-soar/shared';
 
 import { AlertsService } from '../alerts/alerts.service';
 import {
@@ -13,6 +16,15 @@ import { NormalizeAlertQueryDto } from './dto/normalize-alert-query.dto';
 import { QueryNormalizedAlertsDto } from './dto/query-normalized-alerts.dto';
 import { NormalizedAlert } from './normalized-alert.schema';
 import { NormalizationService } from './normalization.service';
+
+type PersistedNormalizedAlert = Omit<
+  SharedNormalizedAlert,
+  'createdAt' | 'updatedAt' | 'observedAt'
+> & {
+  observedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Injectable()
 export class NormalizedAlertsService {
@@ -48,7 +60,7 @@ export class NormalizedAlertsService {
 
     return createSuccessResponse(
       'Normalized alerts retrieved. These are the SOAR-ready inputs for recommendation and analyst workflow.',
-      items,
+      items.map((item) => this.mapNormalizedAlertForResponse(item as PersistedNormalizedAlert)),
       createPaginationMeta({
         count: items.length,
         page,
@@ -59,14 +71,7 @@ export class NormalizedAlertsService {
   }
 
   async findOne(normalizedAlertId: string) {
-    const item = await this.normalizedAlertModel
-      .findOne({ normalizedAlertId })
-      .lean()
-      .exec();
-
-    if (!item) {
-      throw new NotFoundException(`Normalized alert '${normalizedAlertId}' was not found.`);
-    }
+    const item = await this.findNormalizedAlertDataByIdOrThrow(normalizedAlertId);
 
     return createSuccessResponse('Normalized alert retrieved.', item);
   }
@@ -80,7 +85,7 @@ export class NormalizedAlertsService {
 
     if (existing && !query.force) {
       return createSuccessResponse(
-        'Existing normalized alert returned. Pass force=true to create a new normalized record for the same raw alert.',
+        'Synchronous normalization returned the existing normalized alert. Pass force=true to create a new comparison record for the same raw alert.',
         existing,
       );
     }
@@ -96,12 +101,28 @@ export class NormalizedAlertsService {
       ...this.mapNormalizedAlertForPersistence(normalizationResult.normalizedAlert),
     });
 
-    return createSuccessResponse('Raw alert normalized successfully.', created.toObject());
+    return createSuccessResponse(
+      'Raw alert normalized synchronously for direct testing and development.',
+      this.mapNormalizedAlertForResponse(created.toObject() as PersistedNormalizedAlert),
+    );
   }
 
   async createMock() {
     const rawAlertResponse = await this.alertsService.createMockScenario('port-scan');
     return this.normalizeFromRaw(rawAlertResponse.data.alertId, { force: false });
+  }
+
+  async findNormalizedAlertDataByIdOrThrow(normalizedAlertId: string) {
+    const item = await this.normalizedAlertModel
+      .findOne({ normalizedAlertId })
+      .lean()
+      .exec();
+
+    if (!item) {
+      throw new NotFoundException(`Normalized alert '${normalizedAlertId}' was not found.`);
+    }
+
+    return this.mapNormalizedAlertForResponse(item as PersistedNormalizedAlert);
   }
 
   private mapNormalizedAlertForPersistence(
@@ -112,6 +133,17 @@ export class NormalizedAlertsService {
       ...(normalizedAlert.observedAt
         ? { observedAt: new Date(normalizedAlert.observedAt) }
         : {}),
+    };
+  }
+
+  private mapNormalizedAlertForResponse(normalizedAlert: PersistedNormalizedAlert): SharedNormalizedAlert {
+    const { createdAt, updatedAt, observedAt, ...rest } = normalizedAlert;
+
+    return {
+      ...rest,
+      ...(observedAt ? { observedAt: observedAt.toISOString() } : {}),
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
     };
   }
 

@@ -1,12 +1,17 @@
 import type {
   AlertType,
   AlertSource,
-  ApprovalStatus,
+  ApprovalPolicy,
   AutomationLevel,
   IncidentStatus,
+  IncidentCategory,
   NormalizedAlertStatus,
   PcapFileStatus,
   PcapJobStatus,
+  PlaybookActionType,
+  PlaybookStatus,
+  PlaybookStepRisk,
+  RecommendationStatus,
   Severity,
   WorkflowExecutionStatus,
 } from './enums';
@@ -107,8 +112,13 @@ export interface NormalizedAlert {
   updatedAt: string;
 }
 
+export type NormalizedAlertDraft = Omit<
+  NormalizedAlert,
+  'normalizedAlertId' | 'createdAt' | 'updatedAt'
+>;
+
 export interface NormalizationResult {
-  normalizedAlert: Omit<NormalizedAlert, 'normalizedAlertId' | 'createdAt' | 'updatedAt'>;
+  normalizedAlert: NormalizedAlertDraft;
   alertTypeWasInferred: boolean;
   severityWasInferred: boolean;
   confidenceWasInferred: boolean;
@@ -116,47 +126,124 @@ export interface NormalizationResult {
   evidence: AlertEvidence[];
 }
 
+export type PlaybookConditionOperator = 'equals' | 'includes' | 'exists' | 'in' | 'gte' | 'lte';
+
+export type PlaybookReferenceType =
+  | 'standard'
+  | 'guideline'
+  | 'tool_reference'
+  | 'internal_design';
+
 export interface PlaybookAction {
   step: number;
   action: string;
-  type: string;
+  type: PlaybookActionType;
   description: string;
+  requiredFields: string[];
+  produces: string[];
   approvalRequired: boolean;
+  risk: PlaybookStepRisk;
   mockOnly: boolean;
+}
+
+export interface PlaybookCondition {
+  field: string;
+  operator: PlaybookConditionOperator;
+  value?: string | string[] | number;
+  weightHint?: number;
+  description: string;
+}
+
+export interface PlaybookReference {
+  name: string;
+  type: PlaybookReferenceType;
+  note: string;
 }
 
 export interface Playbook {
   playbookId: string;
   name: string;
   description: string;
-  incidentCategory: string;
+  incidentCategory: IncidentCategory;
   supportedAlertTypes: AlertType[];
   requiredFields: string[];
+  optionalFields: string[];
   severityRange: Severity[];
   assetContext: string[];
+  conditions: PlaybookCondition[];
   actions: PlaybookAction[];
   approvalRequired: boolean;
+  approvalPolicy: ApprovalPolicy;
   automationLevel: AutomationLevel;
-  references: string[];
-  createdAt: string;
-  updatedAt: string;
+  status: PlaybookStatus;
+  references: PlaybookReference[];
+  version: string;
+  tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface RecommendationCandidate {
+export interface PlaybookValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  summary: {
+    totalPlaybooks: number;
+    activePlaybooks: number;
+    supportedAlertTypes: string[];
+    missingCoreAlertTypes: string[];
+  };
+}
+
+export interface PlaybookDatasetSummary {
+  totalPlaybooks: number;
+  activePlaybooks: number;
+  byIncidentCategory: Record<string, number>;
+  byAlertType: Record<string, number>;
+  byAutomationLevel: Record<string, number>;
+  approvalRequiredCount: number;
+  sensitiveActionCount: number;
+  mockOnlyActionCount: number;
+}
+
+export interface RecommendationScoreBreakdown {
+  alertTypeScore: number;
+  requiredFieldsScore: number;
+  severityScore: number;
+  assetContextScore: number;
+  conditionScore: number;
+  automationScore: number;
+  totalScore: number;
+}
+
+export interface PlaybookRecommendationItem {
   playbookId: string;
-  score: number;
-  approvalStatus: ApprovalStatus;
+  name: string;
+  incidentCategory: IncidentCategory;
+  totalScore: number;
+  rank: number;
+  matchedReasons: string[];
+  missingFields: string[];
+  scoreBreakdown: RecommendationScoreBreakdown;
+  approvalRequired: boolean;
+  automationLevel: AutomationLevel;
 }
 
-export interface Recommendation {
+export interface PlaybookRecommendationResult {
   recommendationId: string;
   normalizedAlertId: string;
-  topPlaybooks: RecommendationCandidate[];
+  alertId: string;
+  alertType: AlertType;
+  severity: Severity;
+  status: RecommendationStatus;
+  topPlaybooks: PlaybookRecommendationItem[];
+  evaluatedPlaybookCount: number;
   selectedPlaybookId?: string;
-  scoreBreakdown: Record<string, number>;
-  explanationSummary: string;
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export type Recommendation = PlaybookRecommendationResult;
 
 export interface RecommendationExplanation {
   explanationId: string;
@@ -239,6 +326,6 @@ export interface QueueDescriptor {
 }
 
 export interface JobCatalog {
-  mode: 'placeholder';
+  mode: 'placeholder' | 'worker_backed_normalization';
   defaultAutomationLevel: AutomationLevel;
 }

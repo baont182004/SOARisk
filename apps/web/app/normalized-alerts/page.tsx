@@ -8,10 +8,10 @@ export default function NormalizedAlertsPage() {
       <PageIntro
         title="Normalized Alerts"
         role="SOAR-Ready Alert Dataset"
-        description="This page lists the unified alert records produced by deterministic normalization. These outputs are intended to feed later playbook recommendation and explanation phases."
+        description="This page lists the unified alert records produced by deterministic normalization. These outputs can now generate deterministic playbook recommendations and score breakdowns."
       />
       <NormalizedAlertsTable />
-      <FutureNote note="Normalization is deterministic and explainable in Phase 2A. Recommendation scoring and workflow execution remain future phases." />
+      <FutureNote note="Recommendation scoring is now deterministic in Phase 6A. Workflow execution and analyst approval remain later phases." />
     </>
   );
 }
