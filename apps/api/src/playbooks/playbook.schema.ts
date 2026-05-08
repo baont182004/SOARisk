@@ -64,6 +64,24 @@ class PlaybookActionEntry {
   @Prop({ required: true })
   description!: string;
 
+  @Prop()
+  phase?: string;
+
+  @Prop()
+  title?: string;
+
+  @Prop()
+  actionKey?: string;
+
+  @Prop()
+  inputs?: string;
+
+  @Prop()
+  outputs?: string;
+
+  @Prop()
+  successCriteria?: string;
+
   @Prop({ type: [String], default: [] })
   requiredFields!: string[];
 
@@ -81,6 +99,31 @@ class PlaybookActionEntry {
 }
 
 const PlaybookActionEntrySchema = SchemaFactory.createForClass(PlaybookActionEntry);
+
+@Schema({ _id: false, versionKey: false })
+class MitreTechniqueEntry {
+  @Prop({ required: true })
+  id!: string;
+
+  @Prop({ required: true })
+  name!: string;
+
+  @Prop({ required: true })
+  tactic!: string;
+}
+
+const MitreTechniqueEntrySchema = SchemaFactory.createForClass(MitreTechniqueEntry);
+
+@Schema({ _id: false, versionKey: false })
+class PlaybookScoringHintsEntry {
+  @Prop({ type: [String], default: [] })
+  positiveSignals!: string[];
+
+  @Prop({ type: [String], default: [] })
+  negativeSignals!: string[];
+}
+
+const PlaybookScoringHintsEntrySchema = SchemaFactory.createForClass(PlaybookScoringHintsEntry);
 
 @Schema({
   collection: 'playbooks',
@@ -114,6 +157,42 @@ export class Playbook {
 
   @Prop({ type: [String], default: [] })
   assetContext!: string[];
+
+  @Prop({ type: [MitreTechniqueEntrySchema], default: [] })
+  mitreTechniques!: MitreTechniqueEntry[];
+
+  @Prop({ type: [String], default: [] })
+  incidentPhaseFocus!: string[];
+
+  @Prop({ type: [String], enum: Object.values(Severity), default: [] })
+  assetCriticalityAffinity!: Severity[];
+
+  @Prop()
+  sourceReliabilityMin?: number;
+
+  @Prop()
+  automationSuitability?: number;
+
+  @Prop({ enum: ['low', 'medium', 'high', 'critical'] })
+  approvalRisk?: string;
+
+  @Prop({ type: [String], default: [] })
+  safeAutomationActions!: string[];
+
+  @Prop({ type: [String], default: [] })
+  manualApprovalRequiredActions!: string[];
+
+  @Prop()
+  estimatedManualSteps?: number;
+
+  @Prop()
+  expectedOutcome?: string;
+
+  @Prop({ type: PlaybookScoringHintsEntrySchema })
+  scoringHints?: PlaybookScoringHintsEntry;
+
+  @Prop({ type: [String], default: [] })
+  qualityControls!: string[];
 
   @Prop({ type: [PlaybookConditionEntrySchema], default: [] })
   conditions!: PlaybookConditionEntry[];

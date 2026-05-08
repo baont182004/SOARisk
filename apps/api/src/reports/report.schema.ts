@@ -16,6 +16,9 @@ export class Report {
   @Prop({ required: true, index: true })
   incidentId!: string;
 
+  @Prop({ index: true })
+  executionId?: string;
+
   @Prop({ required: true })
   alertSummary!: string;
 

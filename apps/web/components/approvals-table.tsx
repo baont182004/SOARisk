@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { StatusBadge } from './status-badge';
 
 export function ApprovalsTable() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
@@ -30,7 +31,7 @@ export function ApprovalsTable() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load approvals.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được yêu cầu phê duyệt.');
       } finally {
         if (active) {
           setLoading(false);
@@ -48,7 +49,7 @@ export function ApprovalsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading approval requests from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải yêu cầu phê duyệt từ API...</p>
       </section>
     );
   }
@@ -65,7 +66,7 @@ export function ApprovalsTable() {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <p className="text-sm text-slate-600">
-          No approval requests exist yet. Workflow execution will create them when sensitive mock steps are reached.
+          Chưa có yêu cầu phê duyệt. Workflow sẽ tạo yêu cầu khi tới bước phản hồi mô phỏng nhạy cảm.
         </p>
       </section>
     );
@@ -74,10 +75,8 @@ export function ApprovalsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Approval Requests</h3>
-        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
-          Analyst Gate
-        </span>
+        <h3 className="text-lg font-semibold">Yêu cầu phê duyệt</h3>
+        <StatusBadge status="waiting_approval" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
@@ -85,11 +84,11 @@ export function ApprovalsTable() {
             <tr className="border-b border-[var(--border)] text-slate-500">
               <th className="px-3 py-3 font-semibold">Approval ID</th>
               <th className="px-3 py-3 font-semibold">Execution ID</th>
-              <th className="px-3 py-3 font-semibold">Step</th>
-              <th className="px-3 py-3 font-semibold">Action</th>
-              <th className="px-3 py-3 font-semibold">Risk</th>
-              <th className="px-3 py-3 font-semibold">Status</th>
-              <th className="px-3 py-3 font-semibold">Requested At</th>
+              <th className="px-3 py-3 font-semibold">Bước</th>
+              <th className="px-3 py-3 font-semibold">Hành động</th>
+              <th className="px-3 py-3 font-semibold">Rủi ro</th>
+              <th className="px-3 py-3 font-semibold">Trạng thái</th>
+              <th className="px-3 py-3 font-semibold">Yêu cầu lúc</th>
             </tr>
           </thead>
           <tbody>
@@ -110,9 +109,9 @@ export function ApprovalsTable() {
                 <td className="px-3 py-3">{approval.step}</td>
                 <td className="px-3 py-3">{approval.action}</td>
                 <td className="px-3 py-3">{approval.risk}</td>
-                <td className="px-3 py-3">{approval.status}</td>
+                <td className="px-3 py-3"><StatusBadge status={approval.status} /></td>
                 <td className="px-3 py-3">
-                  {approval.requestedAt ? new Date(approval.requestedAt).toLocaleString() : 'n/a'}
+                  {approval.requestedAt ? new Date(approval.requestedAt).toLocaleString() : 'chưa có'}
                 </td>
               </tr>
             ))}

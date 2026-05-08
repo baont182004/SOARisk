@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { StatusBadge } from './status-badge';
 
 export function WorkflowsTable() {
   const [workflows, setWorkflows] = useState<WorkflowExecution[]>([]);
@@ -30,7 +31,7 @@ export function WorkflowsTable() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load workflows.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được workflow.');
       } finally {
         if (active) {
           setLoading(false);
@@ -48,7 +49,7 @@ export function WorkflowsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading workflow executions from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải workflow từ API...</p>
       </section>
     );
   }
@@ -65,7 +66,7 @@ export function WorkflowsTable() {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <p className="text-sm text-slate-600">
-          No workflow executions exist yet. Create one from a selected recommendation first.
+          Chưa có workflow. Hãy chọn playbook từ một khuyến nghị và khởi chạy workflow.
         </p>
       </section>
     );
@@ -74,10 +75,8 @@ export function WorkflowsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Workflow Executions</h3>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
-          Live API
-        </span>
+        <h3 className="text-lg font-semibold">Workflow đã chạy</h3>
+        <StatusBadge status="live_api" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
@@ -86,9 +85,9 @@ export function WorkflowsTable() {
               <th className="px-3 py-3 font-semibold">Execution ID</th>
               <th className="px-3 py-3 font-semibold">Recommendation ID</th>
               <th className="px-3 py-3 font-semibold">Playbook ID</th>
-              <th className="px-3 py-3 font-semibold">Status</th>
-              <th className="px-3 py-3 font-semibold">Current Step</th>
-              <th className="px-3 py-3 font-semibold">Created At</th>
+              <th className="px-3 py-3 font-semibold">Trạng thái</th>
+              <th className="px-3 py-3 font-semibold">Bước hiện tại</th>
+              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
             </tr>
           </thead>
           <tbody>
@@ -107,10 +106,10 @@ export function WorkflowsTable() {
                 </td>
                 <td className="px-3 py-3">{workflow.recommendationId}</td>
                 <td className="px-3 py-3">{workflow.playbookId}</td>
-                <td className="px-3 py-3">{workflow.status}</td>
+                <td className="px-3 py-3"><StatusBadge status={workflow.status} /></td>
                 <td className="px-3 py-3">{workflow.currentStep}</td>
                 <td className="px-3 py-3">
-                  {workflow.createdAt ? new Date(workflow.createdAt).toLocaleString() : 'n/a'}
+                  {workflow.createdAt ? new Date(workflow.createdAt).toLocaleString() : 'chưa có'}
                 </td>
               </tr>
             ))}

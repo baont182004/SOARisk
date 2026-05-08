@@ -32,7 +32,7 @@ export function GenerateRecommendationButton({
       setMessage(response.message);
       setRecommendation(response.data);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to generate recommendation.');
+      setMessage(error instanceof Error ? error.message : 'Không thể tạo khuyến nghị.');
       setRecommendation(null);
     } finally {
       setLoading(false);
@@ -47,14 +47,14 @@ export function GenerateRecommendationButton({
         onClick={handleGenerateRecommendation}
         type="button"
       >
-        {loading ? 'Generating...' : 'Generate Recommendation'}
+        {loading ? 'Đang tạo...' : 'Tạo khuyến nghị'}
       </button>
       {recommendation ? (
         <Link
           className="block text-xs font-semibold text-teal-700 underline"
           href={`/recommendations/${recommendation.recommendationId}`}
         >
-          View {recommendation.recommendationId}
+          Xem {recommendation.recommendationId}
         </Link>
       ) : null}
       {message ? <p className="max-w-xs text-xs text-slate-600">{message}</p> : null}

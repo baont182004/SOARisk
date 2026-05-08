@@ -8,12 +8,12 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
   return (
     <>
       <PageIntro
-        title={`Alert ${id}`}
-        role="Alert Detail"
-        description="This page shows a raw alert record, the original payload, and both normalization paths used in the thesis: direct synchronous testing and worker-backed asynchronous processing."
+        title={`Cảnh báo ${id}`}
+        role="Chi tiết alert"
+        description="Hiển thị bản ghi cảnh báo thô, payload gốc và hai cách chuẩn hóa dùng trong đồ án: đồng bộ trực tiếp hoặc bất đồng bộ qua worker."
       />
       <RawAlertDetail alertId={id} />
-      <FutureNote note="This route should later support both analyst-friendly summaries and raw evidence traceability." />
+      <FutureNote note="Màn hình này phục vụ truy vết alert đầu vào và không thay thế chức năng SIEM." />
     </>
   );
 }

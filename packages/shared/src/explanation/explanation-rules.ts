@@ -66,9 +66,9 @@ export function buildScoreBreakdownExplanation(
       getAssetContextReason(scoreBreakdown.assetContextScore),
     ),
     formatScoreLine(
-      'Condition score',
-      scoreBreakdown.conditionScore,
-      getConditionScoreReason(scoreBreakdown.conditionScore),
+      'Indicator context score',
+      scoreBreakdown.indicatorContextScore ?? scoreBreakdown.conditionScore ?? 0,
+      getConditionScoreReason(scoreBreakdown.indicatorContextScore ?? scoreBreakdown.conditionScore ?? 0),
     ),
     formatScoreLine(
       'Automation suitability score',
@@ -240,7 +240,7 @@ function getAssetContextReason(score: RecommendationScoreBreakdown['assetContext
   return 'asset context did not materially align with the playbook scope';
 }
 
-function getConditionScoreReason(score: RecommendationScoreBreakdown['conditionScore']) {
+function getConditionScoreReason(score: number) {
   if (score >= 15) {
     return 'all defined playbook conditions matched the normalized alert';
   }

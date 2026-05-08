@@ -5,6 +5,7 @@ import {
   NormalizedAlertStatus,
   Severity,
 } from '@soc-soar/shared';
+import { SchemaTypes } from 'mongoose';
 import type { HydratedDocument } from 'mongoose';
 
 export type NormalizedAlertDocument = HydratedDocument<NormalizedAlert>;
@@ -117,6 +118,9 @@ export class NormalizedAlert {
 
   @Prop({ type: [AssetContextEntrySchema], default: [] })
   assetContext!: AssetContextEntry[];
+
+  @Prop({ type: SchemaTypes.Mixed })
+  additionalContext?: Record<string, unknown>;
 
   @Prop({ type: [AlertEvidenceEntrySchema], default: [] })
   evidence!: AlertEvidenceEntry[];

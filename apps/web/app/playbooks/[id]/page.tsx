@@ -9,11 +9,11 @@ export default async function PlaybookDetailPage({ params }: { params: Promise<{
     <>
       <PageIntro
         title={`Playbook ${id}`}
-        role="Playbook Detail"
-        description="This page shows the structured metadata, matching conditions, ordered actions, references, and safety guardrails for a single playbook."
+        role="Chi tiết playbook"
+        description="Hiển thị metadata có cấu trúc, điều kiện khớp, hành động theo thứ tự, tài liệu tham chiếu và ràng buộc an toàn của một playbook."
       />
       <PlaybookDetail playbookId={id} />
-      <FutureNote note="Sensitive actions remain request or recommendation steps only until explicit analyst approval and workflow controls are implemented in later phases." />
+      <FutureNote note="Hành động nhạy cảm chỉ là yêu cầu mô phỏng và cần phê duyệt rõ ràng của analyst trước khi workflow tiếp tục." />
     </>
   );
 }

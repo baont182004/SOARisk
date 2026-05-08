@@ -111,6 +111,7 @@ export interface NormalizedAlert {
   hostname?: string;
   assetId?: string;
   assetContext: AssetContext[];
+  additionalContext?: Record<string, unknown>;
   evidence: AlertEvidence[];
   normalizationStatus: NormalizedAlertStatus;
   normalizationNotes: string[];
@@ -145,6 +146,12 @@ export interface PlaybookAction {
   action: string;
   type: PlaybookActionType;
   description: string;
+  phase?: string;
+  title?: string;
+  actionKey?: string;
+  inputs?: string;
+  outputs?: string;
+  successCriteria?: string;
   requiredFields: string[];
   produces: string[];
   approvalRequired: boolean;
@@ -166,6 +173,19 @@ export interface PlaybookReference {
   note: string;
 }
 
+export type ApprovalRisk = 'low' | 'medium' | 'high' | 'critical';
+
+export interface MitreTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+}
+
+export interface PlaybookScoringHints {
+  positiveSignals: string[];
+  negativeSignals: string[];
+}
+
 export interface Playbook {
   playbookId: string;
   name: string;
@@ -176,6 +196,18 @@ export interface Playbook {
   optionalFields: string[];
   severityRange: Severity[];
   assetContext: string[];
+  mitreTechniques?: MitreTechnique[];
+  incidentPhaseFocus?: string[];
+  assetCriticalityAffinity?: Severity[];
+  sourceReliabilityMin?: number;
+  automationSuitability?: number;
+  approvalRisk?: ApprovalRisk;
+  safeAutomationActions?: string[];
+  manualApprovalRequiredActions?: string[];
+  estimatedManualSteps?: number;
+  expectedOutcome?: string;
+  scoringHints?: PlaybookScoringHints;
+  qualityControls?: string[];
   conditions: PlaybookCondition[];
   actions: PlaybookAction[];
   approvalRequired: boolean;
@@ -214,12 +246,26 @@ export interface PlaybookDatasetSummary {
 
 export interface RecommendationScoreBreakdown {
   alertTypeScore: number;
+  mitreTechniqueScore?: number;
   requiredFieldsScore: number;
   severityScore: number;
   assetContextScore: number;
-  conditionScore: number;
+  conditionScore?: number;
+  indicatorContextScore?: number;
+  alertConfidenceScore?: number;
+  sourceReliabilityScore?: number;
   automationScore: number;
+  historicalPerformanceScore?: number;
+  penaltyScore?: number;
   totalScore: number;
+}
+
+export interface RecommendationCriterionBreakdown {
+  criterion: string;
+  weight: number;
+  componentScore: number;
+  weightedContribution: number;
+  evidence: string;
 }
 
 export interface PlaybookRecommendationItem {
@@ -227,12 +273,21 @@ export interface PlaybookRecommendationItem {
   name: string;
   incidentCategory: IncidentCategory;
   totalScore: number;
+  finalScore?: number;
+  confidenceBand?: 'high' | 'medium' | 'low';
   rank: number;
   matchedReasons: string[];
   missingFields: string[];
+  missingCriteria?: string[];
+  matchedCriteria?: string[];
+  explanation?: string;
+  criteriaBreakdown?: RecommendationCriterionBreakdown[];
   scoreBreakdown: RecommendationScoreBreakdown;
   approvalRequired: boolean;
   automationLevel: AutomationLevel;
+  approvalRisk?: ApprovalRisk;
+  automationSuitability?: number;
+  mitreTechniques?: MitreTechnique[];
 }
 
 export interface PlaybookRecommendationResult {
@@ -274,6 +329,18 @@ export interface PlaybookExplanation {
   limitations: string[];
 }
 
+export interface EvaluationCase {
+  caseId: string;
+  alertType: string;
+  severity: Severity;
+  normalizedAlert: Record<string, unknown>;
+  expectedTop1: string;
+  acceptableTop3: string[];
+  rationale: string;
+  difficulty: 'standard' | 'near_neighbor' | 'hard';
+  baselineTrap: string;
+}
+
 export interface RecommendationExplanation {
   explanationId: string;
   recommendationId: string;
@@ -308,8 +375,10 @@ export interface Incident {
   status: IncidentStatus;
   severity: Severity;
   normalizedAlertId: string;
+  alertId?: string;
   selectedPlaybookId?: string;
   recommendationId?: string;
+  executionId?: string;
   timeline: IncidentTimelineEntry[];
   createdAt: string;
   updatedAt: string;
@@ -373,12 +442,35 @@ export interface ApprovalRequest {
 export interface Report {
   reportId: string;
   incidentId: string;
+  executionId?: string;
   alertSummary: string;
   playbookSummary: string;
   recommendationSummary: string;
   executionSummary: string;
   finalStatus: IncidentStatus;
   createdAt: string;
+}
+
+export interface DashboardSummary {
+  counts: {
+    rawAlerts: number;
+    normalizedAlerts: number;
+    playbooks: number;
+    recommendations: number;
+    pendingApprovals: number;
+    workflows: number;
+    incidents: number;
+    reports: number;
+  };
+  workflowStatus: Record<string, number>;
+  incidentStatus: Record<string, number>;
+  latest: {
+    rawAlerts: RawAlert[];
+    recommendations: Recommendation[];
+    workflows: WorkflowExecution[];
+    incidents: Incident[];
+    reports: Report[];
+  };
 }
 
 export interface PcapFile {

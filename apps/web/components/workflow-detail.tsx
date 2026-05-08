@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
 import { DetailCard } from './detail-card';
 import { EmptyState } from './empty-state';
+import { StatusBadge, formatStatusVi } from './status-badge';
 
 type WorkflowDetailProps = {
   executionId: string;
@@ -54,7 +55,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load workflow.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được workflow.');
       } finally {
         if (active) {
           setLoading(false);
@@ -104,7 +105,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
       setMessage(response.message);
       await reloadContext();
     } catch (startError) {
-      setError(startError instanceof Error ? startError.message : 'Failed to start workflow.');
+      setError(startError instanceof Error ? startError.message : 'Không thể chạy workflow.');
     } finally {
       setStarting(false);
     }
@@ -124,7 +125,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
       setMessage(response.message);
       await reloadContext();
     } catch (cancelError) {
-      setError(cancelError instanceof Error ? cancelError.message : 'Failed to cancel workflow.');
+      setError(cancelError instanceof Error ? cancelError.message : 'Không thể hủy workflow.');
     } finally {
       setCancelling(false);
     }
@@ -133,7 +134,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading workflow detail...</p>
+        <p className="text-sm text-slate-600">Đang tải chi tiết workflow...</p>
       </section>
     );
   }
@@ -147,15 +148,15 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
   }
 
   if (!workflow) {
-    return <EmptyState message="Workflow not found." />;
+    return <EmptyState message="Không tìm thấy workflow." />;
   }
 
   const startButtonLabel =
     workflow.status === 'pending'
-      ? 'Start Workflow'
+      ? 'Khởi chạy workflow'
       : workflow.status === 'waiting_approval'
-        ? 'Continue Workflow'
-        : 'Continue Workflow';
+        ? 'Tiếp tục workflow'
+        : 'Tiếp tục workflow';
   const startDisabled =
     starting ||
     workflow.status === 'success' ||
@@ -171,15 +172,15 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
   return (
     <div className="space-y-6">
       <DetailCard
-        title="Workflow Summary"
+        title="Tóm tắt workflow"
         items={[
           { label: 'Execution ID', value: workflow.executionId },
           { label: 'Recommendation ID', value: workflow.recommendationId },
-          { label: 'Normalized Alert ID', value: workflow.normalizedAlertId },
+          { label: 'Alert chuẩn hóa', value: workflow.normalizedAlertId },
           { label: 'Raw Alert ID', value: workflow.alertId },
           { label: 'Playbook ID', value: workflow.playbookId },
-          { label: 'Status', value: workflow.status },
-          { label: 'Current Step', value: String(workflow.currentStep) },
+          { label: 'Trạng thái', value: formatStatusVi(workflow.status) },
+          { label: 'Bước hiện tại', value: String(workflow.currentStep) },
         ]}
       />
 
@@ -191,7 +192,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
             onClick={handleStart}
             type="button"
           >
-            {starting ? 'Running...' : startButtonLabel}
+            {starting ? 'Đang chạy...' : startButtonLabel}
           </button>
           <button
             className="rounded-xl border border-rose-700 px-4 py-2 text-sm font-semibold text-rose-800 disabled:cursor-not-allowed disabled:opacity-60"
@@ -199,13 +200,13 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
             onClick={handleCancel}
             type="button"
           >
-            {cancelling ? 'Cancelling...' : 'Cancel Workflow'}
+            {cancelling ? 'Đang hủy...' : 'Hủy workflow'}
           </button>
         </div>
         {pendingApprovals.length > 0 ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm text-amber-900">
-              Workflow is waiting for analyst approval before it can continue.
+              Workflow đang chờ analyst phê duyệt trước khi tiếp tục.
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
               {pendingApprovals.map((approval) => (
@@ -214,7 +215,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
                   className="rounded-xl border border-amber-700 px-4 py-2 text-sm font-semibold text-amber-900"
                   href={`/approvals/${approval.approvalId}`}
                 >
-                  Review {approval.approvalId}
+                  Xem phê duyệt {approval.approvalId}
                 </Link>
               ))}
             </div>
@@ -235,28 +236,26 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
       ) : null}
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Workflow Steps</h3>
+        <h3 className="text-lg font-semibold">Các bước workflow</h3>
         <div className="mt-4 space-y-4">
           {workflow.steps.map((step) => (
             <div key={`${workflow.executionId}-${step.step}`} className="rounded-2xl bg-[var(--panel-muted)] p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-800">
-                  Step {step.step}
+                  Bước {step.step}
                 </span>
                 <span className="font-semibold text-slate-900">{step.action}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {step.status}
-                </span>
+                <StatusBadge status={step.status} />
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-700">{step.description}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-4">
-                <MetricCard label="Type" value={step.type} />
-                <MetricCard label="Approval Status" value={step.approvalStatus} />
-                <MetricCard label="Risk" value={step.risk} />
-                <MetricCard label="Mock Only" value={step.mockOnly ? 'yes' : 'no'} />
+                <MetricCard label="Loại bước" value={step.type} />
+                <MetricCard label="Phê duyệt" value={formatStatusVi(step.approvalStatus)} />
+                <MetricCard label="Rủi ro" value={step.risk} />
+                <MetricCard label="Demo action" value={step.mockOnly ? 'Có' : 'Không'} />
               </div>
               <p className="mt-4 text-sm text-slate-700">
-                Result: {step.result ?? 'Step has not produced a result yet.'}
+                Kết quả: {step.result ?? 'Bước này chưa có kết quả.'}
               </p>
             </div>
           ))}
@@ -264,10 +263,10 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
       </section>
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Execution Logs</h3>
+        <h3 className="text-lg font-semibold">Log thực thi</h3>
         <div className="mt-4 space-y-3">
           {logs.length === 0 ? (
-            <p className="text-sm text-slate-600">No execution logs recorded yet.</p>
+            <p className="text-sm text-slate-600">Chưa có log thực thi.</p>
           ) : (
             logs.map((log) => (
               <div key={log.logId} className="rounded-2xl bg-[var(--panel-muted)] p-4">
@@ -277,7 +276,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
                   </span>
                   {log.step !== undefined ? (
                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Step {log.step}
+                      Bước {log.step}
                     </span>
                   ) : null}
                   {log.action ? (
@@ -286,7 +285,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-700">{log.message}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'n/a'}
+                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'chưa có'}
                 </p>
               </div>
             ))

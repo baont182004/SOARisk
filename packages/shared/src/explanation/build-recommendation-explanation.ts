@@ -100,7 +100,12 @@ function buildSummary(
     `The highest ranked playbook is ${topPlaybook.playbookId} ${topPlaybook.name} because the normalized alert type matches ${normalizedAlert.alertType}, required fields are ${topPlaybook.missingFields.length === 0 ? 'available' : 'partially available'}, and severity is ${topPlaybook.scoreBreakdown.severityScore > 0 ? 'within' : 'outside'} the playbook scope.`,
   ];
 
-  if (topPlaybook.scoreBreakdown.conditionScore > 0) {
+  const contextScore =
+    topPlaybook.scoreBreakdown.indicatorContextScore ??
+    topPlaybook.scoreBreakdown.conditionScore ??
+    0;
+
+  if (contextScore > 0) {
     summaryParts.push(
       `The recommendation also benefits from playbook-condition coverage and an asset-context score of ${topPlaybook.scoreBreakdown.assetContextScore}.`,
     );

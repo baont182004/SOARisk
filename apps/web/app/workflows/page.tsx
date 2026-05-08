@@ -6,12 +6,12 @@ export default function WorkflowsPage() {
   return (
     <>
       <PageIntro
-        title="Workflows"
-        role="Orchestration"
-        description="This section shows mock-only workflow executions created from selected recommendations. Safe steps run automatically, while sensitive containment requests pause for analyst approval."
+        title="Quy trình xử lý (Workflow)"
+        role="Điều phối phản hồi"
+        description="Hiển thị workflow mô phỏng được tạo từ khuyến nghị đã chọn. Bước an toàn chạy tự động, bước nhạy cảm tạm dừng để analyst phê duyệt."
       />
       <WorkflowsTable />
-      <FutureNote note="Workflow execution in Phase 8A is mock-only. Sensitive steps pause for approval, and no real containment or response action is executed." />
+      <FutureNote note="Workflow chỉ thực thi hành động phản hồi mô phỏng. Không có thao tác containment thật trên hạ tầng bên ngoài." />
     </>
   );
 }

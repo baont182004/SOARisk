@@ -1,16 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  SEED_PLAYBOOK_IDS,
-  type Playbook as SharedPlaybook,
-} from '@soc-soar/shared';
+import { type Playbook as SharedPlaybook } from '@soc-soar/shared';
 import type { Model } from 'mongoose';
 
 import {
   createPaginationMeta,
   createSuccessResponse,
 } from '../common/api-response.util';
-import { PLAYBOOK_SEED_DATA } from './playbook.seed';
+import { getPlaybookSeedIds, loadPlaybookSeedData } from './playbook.seed';
 import { QueryPlaybooksDto } from './dto/query-playbooks.dto';
 import { Playbook } from './playbook.schema';
 import { PlaybookValidationService } from './playbook-validation.service';
@@ -77,8 +74,9 @@ export class PlaybooksService {
   }
 
   async resetSeed() {
+    const seedIds = getPlaybookSeedIds();
     const deleted = await this.playbookModel
-      .deleteMany({ playbookId: { $in: [...SEED_PLAYBOOK_IDS] } })
+      .deleteMany({ playbookId: { $in: seedIds } })
       .exec();
     const result = await this.upsertSeedPlaybooks();
 
@@ -133,15 +131,16 @@ export class PlaybooksService {
   }
 
   private async upsertSeedPlaybooks() {
+    const seedData = loadPlaybookSeedData();
     const existing = await this.playbookModel
-      .find({ playbookId: { $in: PLAYBOOK_SEED_DATA.map((playbook) => playbook.playbookId) } })
+      .find({ playbookId: { $in: seedData.map((playbook) => playbook.playbookId) } })
       .select({ playbookId: 1, _id: 0 })
       .lean()
       .exec();
     const existingIds = new Set(existing.map((item) => item.playbookId));
 
     await Promise.all(
-      PLAYBOOK_SEED_DATA.map((playbook) =>
+      seedData.map((playbook) =>
         this.playbookModel
           .findOneAndUpdate(
             { playbookId: playbook.playbookId },
@@ -164,15 +163,15 @@ export class PlaybooksService {
       ),
     );
 
-    const createdCount = PLAYBOOK_SEED_DATA.filter(
+    const createdCount = seedData.filter(
       (playbook) => !existingIds.has(playbook.playbookId),
     ).length;
-    const updatedCount = PLAYBOOK_SEED_DATA.length - createdCount;
+    const updatedCount = seedData.length - createdCount;
 
     return {
       createdCount,
       updatedCount,
-      total: PLAYBOOK_SEED_DATA.length,
+      total: seedData.length,
     };
   }
 

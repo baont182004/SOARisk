@@ -11,10 +11,10 @@ export function Sidebar() {
   return (
     <aside className="w-full border-b border-[var(--border)] bg-[var(--panel)] p-4 lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-700">SOC SOAR</p>
-        <h1 className="mt-2 text-xl font-semibold">Automation Platform</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-700">SOARISK</p>
+        <h1 className="mt-2 text-xl font-semibold">Tự động hóa SOC</h1>
         <p className="mt-2 text-sm text-slate-600">
-          SOAR-focused thesis foundation for alert-driven analyst workflows.
+          Nền tảng SOAR demo cho luồng xử lý cảnh báo, playbook, phê duyệt và báo cáo.
         </p>
       </div>
 

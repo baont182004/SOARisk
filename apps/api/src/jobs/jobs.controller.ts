@@ -24,6 +24,11 @@ export class JobsController {
     return this.jobsService.findAlertNormalizationJob(jobId);
   }
 
+  @Get(':queueName/:jobId')
+  findQueueJob(@Param('queueName') queueName: string, @Param('jobId') jobId: string) {
+    return this.jobsService.findQueueJob(queueName, jobId);
+  }
+
   @Post('normalize-alert/:alertId')
   enqueueAlertNormalization(
     @Param('alertId') alertId: string,
@@ -51,5 +56,10 @@ export class JobsController {
   @Post('start-workflow/:executionId')
   enqueueWorkflowStart(@Param('executionId') executionId: string) {
     return this.jobsService.enqueueWorkflowStart(executionId);
+  }
+
+  @Post('generate-report/:executionId')
+  enqueueReportGeneration(@Param('executionId') executionId: string) {
+    return this.jobsService.enqueueReportGeneration(executionId);
   }
 }

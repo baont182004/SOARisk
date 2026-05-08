@@ -13,4 +13,5 @@ function parsePort(value: string | undefined, fallback: number) {
 export const workerConfig = {
   redisHost: process.env.REDIS_HOST ?? 'localhost',
   redisPort: parsePort(process.env.REDIS_PORT, 6379),
+  apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:3001',
 };

@@ -109,7 +109,7 @@ export function validatePlaybookDataset(playbooks: Playbook[]): PlaybookValidati
       const isContainmentAction = action.type === PlaybookActionType.CONTAINMENT;
       const isSensitiveAction = action.risk === PlaybookStepRisk.SENSITIVE;
 
-      if (isContainmentAction && !action.approvalRequired) {
+      if (isContainmentAction && isSensitiveAction && !action.approvalRequired) {
         errors.push(
           `Playbook '${playbook.playbookId}' containment action '${action.action}' must require approval.`,
         );

@@ -5,8 +5,11 @@ import {
   ApprovalRequest,
   ApprovalRequestSchema,
 } from '../approvals/approval-request.schema';
+import { IncidentsModule } from '../incidents/incidents.module';
+import { NormalizedAlertsModule } from '../normalized-alerts/normalized-alerts.module';
 import { PlaybooksModule } from '../playbooks/playbooks.module';
 import { RecommendationsModule } from '../recommendations/recommendations.module';
+import { ReportsModule } from '../reports/reports.module';
 import { ExecutionLog, ExecutionLogSchema } from './execution-log.schema';
 import { WorkflowExecution, WorkflowExecutionSchema } from './workflow-execution.schema';
 import { WorkflowsController } from './workflows.controller';
@@ -21,6 +24,9 @@ import { WorkflowsService } from './workflows.service';
     ]),
     RecommendationsModule,
     PlaybooksModule,
+    NormalizedAlertsModule,
+    IncidentsModule,
+    ReportsModule,
   ],
   controllers: [WorkflowsController],
   providers: [WorkflowsService],

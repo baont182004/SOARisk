@@ -6,12 +6,12 @@ export default function ApprovalsPage() {
   return (
     <>
       <PageIntro
-        title="Approvals"
-        role="Analyst Gate"
-        description="This page lists pending and completed approval requests created when workflows reach sensitive mock-only response steps."
+        title="Phê duyệt"
+        role="Cổng kiểm soát analyst"
+        description="Danh sách yêu cầu phê duyệt được tạo khi workflow đi tới bước phản hồi mô phỏng có rủi ro hoặc nhạy cảm."
       />
       <ApprovalsTable />
-      <FutureNote note="Approval in Phase 8A only permits mock workflow continuation. It does not authorize or trigger a real external security action." />
+      <FutureNote note="Phê duyệt chỉ cho phép workflow demo tiếp tục. Hệ thống không gọi firewall, EDR, tài khoản hay thiết bị thật." />
     </>
   );
 }

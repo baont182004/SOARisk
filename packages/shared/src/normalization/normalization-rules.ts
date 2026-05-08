@@ -16,6 +16,7 @@ export const ALERT_TYPE_KEYWORDS: Array<{
     keywords: ['dns', 'domain'],
   },
   { alertType: AlertType.BOTNET_C2, keywords: ['c2', 'botnet'] },
+  { alertType: AlertType.MALWARE, keywords: ['malware', 'ransomware'] },
   { alertType: AlertType.MALWARE_TRAFFIC, keywords: ['malware'] },
 ];
 
@@ -27,6 +28,7 @@ export const DEFAULT_SEVERITY_BY_ALERT_TYPE: Record<AlertType, Severity> = {
   [AlertType.WEB_XSS]: Severity.MEDIUM,
   [AlertType.SUSPICIOUS_DNS_QUERY]: Severity.MEDIUM,
   [AlertType.MALWARE_TRAFFIC]: Severity.HIGH,
+  [AlertType.MALWARE]: Severity.HIGH,
   [AlertType.BOTNET_C2]: Severity.HIGH,
   [AlertType.BRUTE_FORCE]: Severity.MEDIUM,
   [AlertType.PHISHING]: Severity.MEDIUM,

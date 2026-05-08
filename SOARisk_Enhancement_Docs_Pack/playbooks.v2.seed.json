@@ -1,0 +1,5654 @@
+{
+  "metadata": {
+    "project": "SOARisk",
+    "createdAt": "2026-05-08",
+    "purpose": "Structured playbook dataset, recommendation scoring model, and evaluation dataset for report-defense-ready SOAR demo.",
+    "note": "Use as seed/demo data. Validate IDs against existing database before replacing current PB-001..PB-010 records."
+  },
+  "playbooks": [
+    {
+      "id": "PB-001",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "External Port Scan Investigation",
+      "category": "port_scan",
+      "description": "Investigate external scanning against public-facing assets without treating PCAP as a full IDS.",
+      "alertTypes": [
+        "port_scan"
+      ],
+      "severityAffinity": [
+        "low",
+        "medium"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "destinationPorts",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1595",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance"
+        },
+        {
+          "id": "T1595.001",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "low",
+        "medium"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.75,
+      "approvalRisk": "low",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account"
+      ],
+      "estimatedManualSteps": 6,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "high_unique_ports",
+          "external_source",
+          "short_time_window"
+        ],
+        "negativeSignals": [
+          "single_port",
+          "known_internal_scanner"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-002",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Internal Lateral Movement Scan",
+      "category": "port_scan",
+      "description": "Prioritize scans originating from internal hosts because they may indicate compromised endpoint reconnaissance.",
+      "alertTypes": [
+        "port_scan"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "destinationPorts",
+        "sourceAssetRole",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1046",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Discovery / Lateral Movement"
+        },
+        {
+          "id": "T1021",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Discovery / Lateral Movement"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.55,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "internal_source",
+          "many_internal_targets",
+          "admin_ports"
+        ],
+        "negativeSignals": [
+          "approved_vulnerability_scanner"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-003",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Critical Asset Reconnaissance",
+      "category": "port_scan",
+      "description": "Escalate reconnaissance against critical systems even when the volume is moderate.",
+      "alertTypes": [
+        "port_scan"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "destinationPorts",
+        "targetAssetCriticality",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1595",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance"
+        },
+        {
+          "id": "T1595.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.5,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "critical_asset",
+          "public_asset",
+          "known_exposed_service"
+        ],
+        "negativeSignals": [
+          "low_value_test_host"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-004",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Vulnerability Scan Against Exposed Service",
+      "category": "port_scan",
+      "description": "Connect vulnerability-scanning behavior with exposed application risk before recommending containment.",
+      "alertTypes": [
+        "port_scan"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "service",
+        "destinationPorts",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1595.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance / Initial Access"
+        },
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Reconnaissance / Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.6,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "scanner_signature",
+          "exposed_service",
+          "repeated_probe"
+        ],
+        "negativeSignals": [
+          "known_patch_scanner"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-005",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Basic SQLi Triage",
+      "category": "web_sql_injection",
+      "description": "Triage generic SQL injection indicators and correlate with WAF/application logs.",
+      "alertTypes": [
+        "web_sql_injection"
+      ],
+      "severityAffinity": [
+        "low",
+        "medium"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "url",
+        "httpMethod",
+        "payloadSnippet",
+        "statusCode"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "low",
+        "medium"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.8,
+      "approvalRisk": "low",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account"
+      ],
+      "estimatedManualSteps": 6,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "sqli_payload",
+          "waf_alert",
+          "4xx_response"
+        ],
+        "negativeSignals": [
+          "static_test_payload",
+          "known_scanner"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-006",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "SQLi Against Authentication Endpoint",
+      "category": "web_sql_injection",
+      "description": "Prioritize injection attempts against login, password reset, or session endpoints.",
+      "alertTypes": [
+        "web_sql_injection"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "url",
+        "httpMethod",
+        "payloadSnippet",
+        "statusCode",
+        "endpointRole"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Credential Access"
+        },
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Credential Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.65,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "auth_endpoint",
+          "login_bypass_payload",
+          "multiple_attempts"
+        ],
+        "negativeSignals": [
+          "blocked_by_waf_only"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-007",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "SQLi With Possible Data Access",
+      "category": "web_sql_injection",
+      "description": "Escalate SQLi when response patterns suggest database error, expanded response body, or possible data exposure.",
+      "alertTypes": [
+        "web_sql_injection"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "url",
+        "payloadSnippet",
+        "statusCode",
+        "responseSize",
+        "dbErrorIndicator"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Collection"
+        },
+        {
+          "id": "T1005",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Collection"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.35,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "db_error",
+          "large_response",
+          "200_after_payload"
+        ],
+        "negativeSignals": [
+          "only_403_responses"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-008",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "SQLi Followed By Webshell Indicator",
+      "category": "web_sql_injection",
+      "description": "Escalate suspected exploitation chain from SQLi to possible webshell persistence.",
+      "alertTypes": [
+        "web_sql_injection"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "url",
+        "payloadSnippet",
+        "statusCode",
+        "webshellIndicator",
+        "hostProcess"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Persistence"
+        },
+        {
+          "id": "T1505.003",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Persistence"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.25,
+      "approvalRisk": "critical",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 12,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "webshell_indicator",
+          "unexpected_file_write",
+          "web_process_shell"
+        ],
+        "negativeSignals": [
+          "no_host_signal"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-009",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "WAF Event Correlation and IP Blocking",
+      "category": "web_sql_injection",
+      "description": "Recommend safe, reversible containment when repeated WAF events come from the same source.",
+      "alertTypes": [
+        "web_sql_injection"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "url",
+        "payloadSnippet",
+        "wafAction",
+        "eventCount"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1190",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.85,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "repeated_waf_block",
+          "same_source_many_urls"
+        ],
+        "negativeSignals": [
+          "shared_nat_or_partner_ip"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-010",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "DGA Domain Investigation",
+      "category": "suspicious_dns_query",
+      "description": "Investigate algorithmically generated domains using entropy and frequency signals.",
+      "alertTypes": [
+        "suspicious_dns_query"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "queryCount",
+        "entropyScore",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1568.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.7,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "high_entropy_domain",
+          "many_nxdomain",
+          "beacon_pattern"
+        ],
+        "negativeSignals": [
+          "cdn_or_tracking_domain"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-011",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Newly Registered Domain Lookup",
+      "category": "suspicious_dns_query",
+      "description": "Correlate DNS queries to newly registered or recently observed domains.",
+      "alertTypes": [
+        "suspicious_dns_query"
+      ],
+      "severityAffinity": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "domainAgeDays",
+        "queryCount"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1583.001",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Resource Development / Command and Control"
+        },
+        {
+          "id": "T1071.004",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Resource Development / Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.8,
+      "approvalRisk": "low",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account"
+      ],
+      "estimatedManualSteps": 6,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "domain_age_low",
+          "rare_domain",
+          "external_lookup"
+        ],
+        "negativeSignals": [
+          "known_business_vendor"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-012",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "DNS Tunneling Suspicion",
+      "category": "suspicious_dns_query",
+      "description": "Escalate unusually long/high-volume DNS traffic that may indicate tunneling or exfiltration.",
+      "alertTypes": [
+        "suspicious_dns_query"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "queryCount",
+        "avgQueryLength",
+        "bytesOut",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1071.004",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control / Exfiltration"
+        },
+        {
+          "id": "T1048.003",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control / Exfiltration"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.3,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "long_dns_queries",
+          "high_bytes_out",
+          "regular_intervals"
+        ],
+        "negativeSignals": [
+          "known_dns_security_tool"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-013",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "C2 Domain Communication",
+      "category": "suspicious_dns_query",
+      "description": "Prioritize DNS communications to domains with threat intelligence or C2 reputation hits.",
+      "alertTypes": [
+        "suspicious_dns_query"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "threatIntelVerdict",
+        "destinationIp",
+        "queryCount"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1071.004",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        },
+        {
+          "id": "T1102",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.45,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "threat_intel_malicious",
+          "c2_tag",
+          "repeated_beacon"
+        ],
+        "negativeSignals": [
+          "stale_ioc_low_confidence"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-014",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "High-Risk DNS on Critical Asset",
+      "category": "suspicious_dns_query",
+      "description": "Escalate suspicious DNS from critical assets such as domain controllers, payment servers, or production databases.",
+      "alertTypes": [
+        "suspicious_dns_query"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "targetAssetCriticality",
+        "queryCount",
+        "sourceAssetRole"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1071.004",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.4,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "critical_asset",
+          "rare_domain",
+          "privileged_server"
+        ],
+        "negativeSignals": [
+          "lab_asset"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-015",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Single Account Brute Force",
+      "category": "brute_force",
+      "description": "Handle repeated failures against one account with reversible identity checks.",
+      "alertTypes": [
+        "brute_force"
+      ],
+      "severityAffinity": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "targetUser",
+        "failedLoginCount",
+        "timeWindow",
+        "authService"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "low",
+        "medium"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.8,
+      "approvalRisk": "low",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account"
+      ],
+      "estimatedManualSteps": 6,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "single_user_many_failures",
+          "same_source",
+          "no_success"
+        ],
+        "negativeSignals": [
+          "user_typo_pattern"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-016",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Password Spraying",
+      "category": "brute_force",
+      "description": "Detect one/few password attempts across many accounts and avoid misclassifying it as single-account brute force.",
+      "alertTypes": [
+        "brute_force"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "targetUsers",
+        "failedLoginCount",
+        "uniqueUserCount",
+        "timeWindow",
+        "authService"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1110.003",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.65,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "many_users_same_source",
+          "low_per_user_failures",
+          "wide_auth_attempts"
+        ],
+        "negativeSignals": [
+          "load_test_or_sso_migration"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-017",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Privileged Account Attack",
+      "category": "brute_force",
+      "description": "Escalate brute force against admin or service accounts because business impact and approval risk are higher.",
+      "alertTypes": [
+        "brute_force"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "targetUser",
+        "failedLoginCount",
+        "isPrivileged",
+        "authService",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Initial Access"
+        },
+        {
+          "id": "T1078",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.45,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "privileged_user",
+          "admin_service",
+          "external_source"
+        ],
+        "negativeSignals": [
+          "break_glass_test"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-018",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Successful Login After Failures",
+      "category": "brute_force",
+      "description": "Escalate when failed logins are followed by success, especially from new geography or risky source.",
+      "alertTypes": [
+        "brute_force"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "targetUser",
+        "failedLoginCount",
+        "successAfterFailure",
+        "loginGeo",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Initial Access"
+        },
+        {
+          "id": "T1078",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.35,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "success_after_failures",
+          "new_geo",
+          "new_device"
+        ],
+        "negativeSignals": [
+          "expected_travel_or_vpn"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-019",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Remote Service Brute Force",
+      "category": "brute_force",
+      "description": "Investigate brute force against SSH, RDP, VPN, or database services.",
+      "alertTypes": [
+        "brute_force"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "authService",
+        "failedLoginCount",
+        "destinationPort",
+        "timeWindow"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Lateral Movement"
+        },
+        {
+          "id": "T1021",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Credential Access / Lateral Movement"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.55,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "rdp_or_ssh",
+          "external_source",
+          "many_failures"
+        ],
+        "negativeSignals": [
+          "known_monitoring_service"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-020",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Mailbox Triage",
+      "category": "phishing",
+      "description": "Triage user-reported phishing messages and preserve evidence.",
+      "alertTypes": [
+        "phishing"
+      ],
+      "severityAffinity": [
+        "low",
+        "medium"
+      ],
+      "requiredFields": [
+        "sender",
+        "recipient",
+        "subject",
+        "messageId",
+        "reportedByUser"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1566",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "low",
+        "medium"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.85,
+      "approvalRisk": "low",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account"
+      ],
+      "estimatedManualSteps": 6,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "user_reported",
+          "suspicious_sender",
+          "similar_messages"
+        ],
+        "negativeSignals": [
+          "internal_newsletter"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-021",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Credential Harvesting Link",
+      "category": "phishing",
+      "description": "Handle phishing links that mimic login portals or may collect credentials.",
+      "alertTypes": [
+        "phishing"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sender",
+        "recipient",
+        "url",
+        "domain",
+        "clicked",
+        "credentialSubmitted"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1566.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Credential Access"
+        },
+        {
+          "id": "T1110",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Credential Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.55,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "login_like_url",
+          "clicked",
+          "credential_submitted"
+        ],
+        "negativeSignals": [
+          "security_awareness_simulation"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-022",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Attachment Malware Suspicion",
+      "category": "phishing",
+      "description": "Escalate messages with suspicious attachments, sandbox flags, or execution risk.",
+      "alertTypes": [
+        "phishing"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sender",
+        "recipient",
+        "attachmentName",
+        "attachmentHash",
+        "sandboxVerdict"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1566.001",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Execution"
+        },
+        {
+          "id": "T1204.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Execution"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.45,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "malicious_attachment",
+          "macro_or_script",
+          "sandbox_malicious"
+        ],
+        "negativeSignals": [
+          "clean_sandbox_high_confidence"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-023",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Business Email Compromise Triage",
+      "category": "phishing",
+      "description": "Investigate suspected impersonation, payment-change requests, and executive spoofing.",
+      "alertTypes": [
+        "phishing"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "sender",
+        "recipient",
+        "subject",
+        "displayNameMismatch",
+        "financialKeyword"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1566",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Fraud"
+        },
+        {
+          "id": "T1656",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access / Fraud"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.6,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "display_name_mismatch",
+          "payment_keyword",
+          "executive_impersonation"
+        ],
+        "negativeSignals": [
+          "known_vendor_thread"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-024",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Phishing With Successful Click/Login",
+      "category": "phishing",
+      "description": "Escalate phishing when click, credential submission, or subsequent login signals exist.",
+      "alertTypes": [
+        "phishing"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "recipient",
+        "url",
+        "clicked",
+        "credentialSubmitted",
+        "loginAfterClick",
+        "sourceIp"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1566.002",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access"
+        },
+        {
+          "id": "T1078",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Initial Access"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.3,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "clicked",
+          "credential_submitted",
+          "login_after_click"
+        ],
+        "negativeSignals": [
+          "awareness_test"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-025",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Endpoint Malware Triage",
+      "category": "malware",
+      "description": "Triage endpoint malware events and confirm whether EDR action succeeded.",
+      "alertTypes": [
+        "malware"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "hostId",
+        "user",
+        "malwareName",
+        "fileHash",
+        "edrAction"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1204",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Execution"
+        },
+        {
+          "id": "T1059",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Execution"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.65,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "edr_detection",
+          "known_bad_hash",
+          "quarantine_failed"
+        ],
+        "negativeSignals": [
+          "pua_low_risk"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-026",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Suspicious Process or Script Execution",
+      "category": "malware",
+      "description": "Investigate suspicious scripts, PowerShell, encoded commands, or abnormal parent-child process chains.",
+      "alertTypes": [
+        "malware"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high"
+      ],
+      "requiredFields": [
+        "hostId",
+        "processName",
+        "commandLine",
+        "parentProcess",
+        "user"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1059",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Execution"
+        },
+        {
+          "id": "T1059.001",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Execution"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.45,
+      "automationSuitability": 0.5,
+      "approvalRisk": "medium",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 8,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "encoded_command",
+          "office_parent_process",
+          "suspicious_child_process"
+        ],
+        "negativeSignals": [
+          "admin_script_signed"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "automated",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-027",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Malware With C2 Indicator",
+      "category": "malware",
+      "description": "Escalate endpoint malware when network C2 indicators are present.",
+      "alertTypes": [
+        "malware"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "hostId",
+        "fileHash",
+        "destinationIp",
+        "domain",
+        "threatIntelVerdict"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1071",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        },
+        {
+          "id": "T1105",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.35,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "malware_plus_c2",
+          "malicious_domain",
+          "beaconing"
+        ],
+        "negativeSignals": [
+          "blocked_only_no_endpoint_signal"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-028",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Ransomware Early Indicator",
+      "category": "malware",
+      "description": "Trigger high-risk containment workflow for ransomware-like behavior, requiring analyst approval for disruptive actions.",
+      "alertTypes": [
+        "malware"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "hostId",
+        "processName",
+        "fileChangeRate",
+        "ransomNoteIndicator",
+        "backupAccess"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1486",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Impact"
+        },
+        {
+          "id": "T1490",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Impact"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.2,
+      "approvalRisk": "critical",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 12,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "high_file_change_rate",
+          "ransom_note",
+          "shadow_copy_delete"
+        ],
+        "negativeSignals": [
+          "backup_test_lab"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-029",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Large Outbound Transfer Investigation",
+      "category": "data_exfiltration",
+      "description": "Investigate abnormal outbound transfer volume and correlate with sensitive asset context.",
+      "alertTypes": [
+        "data_exfiltration"
+      ],
+      "severityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "destinationIp",
+        "bytesOut",
+        "timeWindow",
+        "destinationCountry"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1041",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Exfiltration"
+        },
+        {
+          "id": "T1048",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Exfiltration"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "medium",
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.45,
+      "approvalRisk": "high",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 10,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "large_bytes_out",
+          "rare_destination",
+          "sensitive_asset"
+        ],
+        "negativeSignals": [
+          "backup_or_replication_window"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    },
+    {
+      "id": "PB-030",
+      "version": "2.0.0",
+      "status": "active",
+      "name": "Exfiltration Over C2 or DNS Channel",
+      "category": "data_exfiltration",
+      "description": "Escalate possible exfiltration using the same C2/DNS channel used by the adversary.",
+      "alertTypes": [
+        "data_exfiltration"
+      ],
+      "severityAffinity": [
+        "high",
+        "critical"
+      ],
+      "requiredFields": [
+        "sourceIp",
+        "domain",
+        "bytesOut",
+        "queryCount",
+        "threatIntelVerdict"
+      ],
+      "optionalFields": [
+        "confidence",
+        "sourceReliability",
+        "eventCount",
+        "rawAlertId",
+        "mitreTechniques",
+        "tags"
+      ],
+      "mitreTechniques": [
+        {
+          "id": "T1041",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Exfiltration / Command and Control"
+        },
+        {
+          "id": "T1071.004",
+          "name": "See MITRE ATT&CK",
+          "tactic": "Exfiltration / Command and Control"
+        }
+      ],
+      "incidentPhaseFocus": [
+        "detection_analysis",
+        "containment",
+        "post_incident"
+      ],
+      "assetCriticalityAffinity": [
+        "high",
+        "critical"
+      ],
+      "sourceReliabilityMin": 0.55,
+      "automationSuitability": 0.25,
+      "approvalRisk": "critical",
+      "safeAutomationActions": [
+        "context_enrichment",
+        "evidence_collection",
+        "ticket_update",
+        "report_draft"
+      ],
+      "manualApprovalRequiredActions": [
+        "block_ip",
+        "disable_account",
+        "isolate_host",
+        "delete_email",
+        "reset_password"
+      ],
+      "estimatedManualSteps": 12,
+      "expectedOutcome": "Analyst can approve a defensible response action with documented rationale and evidence.",
+      "scoringHints": {
+        "positiveSignals": [
+          "c2_plus_bytes_out",
+          "dns_tunnel",
+          "malicious_domain"
+        ],
+        "negativeSignals": [
+          "dns_filter_test"
+        ]
+      },
+      "workflowSteps": [
+        {
+          "id": "S1",
+          "order": 1,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Collect and normalize alert context",
+          "actionKey": "normalize_alert_context",
+          "requiresApproval": false,
+          "inputs": [
+            "normalizedAlert"
+          ],
+          "outputs": [
+            "caseContext"
+          ],
+          "successCriteria": "Required fields are present or missing fields are recorded."
+        },
+        {
+          "id": "S2",
+          "order": 2,
+          "phase": "detection_analysis",
+          "type": "automated",
+          "title": "Enrich indicators and asset context",
+          "actionKey": "enrich_indicators_and_assets",
+          "requiresApproval": false,
+          "inputs": [
+            "sourceIp",
+            "domain",
+            "url",
+            "hostId",
+            "targetAssetCriticality"
+          ],
+          "outputs": [
+            "enrichment"
+          ],
+          "successCriteria": "Threat intel, asset criticality, and source reliability values are attached where available."
+        },
+        {
+          "id": "S3",
+          "order": 3,
+          "phase": "detection_analysis",
+          "type": "manual",
+          "title": "Analyst validation checkpoint",
+          "actionKey": "analyst_review",
+          "requiresApproval": false,
+          "inputs": [
+            "caseContext",
+            "enrichment"
+          ],
+          "outputs": [
+            "analystDecision"
+          ],
+          "successCriteria": "Analyst marks true positive, benign, duplicate, or needs more evidence."
+        },
+        {
+          "id": "S4",
+          "order": 4,
+          "phase": "containment",
+          "type": "manual",
+          "title": "Run safe containment or prepare containment recommendation",
+          "actionKey": "safe_containment_recommendation",
+          "requiresApproval": true,
+          "inputs": [
+            "analystDecision",
+            "approvalRisk"
+          ],
+          "outputs": [
+            "containmentPlan"
+          ],
+          "successCriteria": "Only reversible actions are automated; disruptive actions require explicit approval."
+        },
+        {
+          "id": "S5",
+          "order": 5,
+          "phase": "eradication_recovery",
+          "type": "manual",
+          "title": "Document remediation and recovery actions",
+          "actionKey": "document_remediation",
+          "requiresApproval": false,
+          "inputs": [
+            "containmentPlan"
+          ],
+          "outputs": [
+            "remediationSummary"
+          ],
+          "successCriteria": "Incident timeline, actions, residual risk, and owner are recorded."
+        },
+        {
+          "id": "S6",
+          "order": 6,
+          "phase": "post_incident",
+          "type": "automated",
+          "title": "Update incident metrics and evaluation labels",
+          "actionKey": "update_metrics_and_eval",
+          "requiresApproval": false,
+          "inputs": [
+            "analystDecision",
+            "selectedPlaybook"
+          ],
+          "outputs": [
+            "playbookUsageRecord"
+          ],
+          "successCriteria": "Historical usage and outcome data are available for future scoring."
+        }
+      ],
+      "qualityControls": [
+        "Do not execute disruptive containment without analyst approval.",
+        "Record missing fields instead of silently lowering recommendation quality.",
+        "Keep explanation text tied to exact scoring components."
+      ]
+    }
+  ]
+}

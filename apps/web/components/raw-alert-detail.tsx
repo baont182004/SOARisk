@@ -36,7 +36,7 @@ export function RawAlertDetail({ alertId }: RawAlertDetailProps) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load raw alert.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được chi tiết cảnh báo.');
       } finally {
         if (active) {
           setLoading(false);
@@ -54,7 +54,7 @@ export function RawAlertDetail({ alertId }: RawAlertDetailProps) {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading raw alert detail...</p>
+        <p className="text-sm text-slate-600">Đang tải chi tiết cảnh báo...</p>
       </section>
     );
   }
@@ -68,32 +68,32 @@ export function RawAlertDetail({ alertId }: RawAlertDetailProps) {
   }
 
   if (!alert) {
-    return <EmptyState message="Raw alert not found." />;
+    return <EmptyState message="Không tìm thấy cảnh báo thô." />;
   }
 
   return (
     <div className="space-y-6">
       <DetailCard
-        title="Raw Alert Detail"
+        title="Chi tiết cảnh báo thô"
         items={[
           { label: 'Alert ID', value: alert.alertId },
-          { label: 'Source', value: alert.source },
-          { label: 'Title', value: alert.title },
-          { label: 'Alert Type', value: alert.alertType ?? 'not provided' },
-          { label: 'Severity', value: alert.severity ?? 'not provided' },
+          { label: 'Nguồn', value: alert.source },
+          { label: 'Tiêu đề', value: alert.title },
+          { label: 'Loại alert', value: alert.alertType ?? 'chưa có' },
+          { label: 'Mức độ', value: alert.severity ?? 'chưa có' },
           {
-            label: 'Confidence',
-            value: alert.confidence !== undefined ? `${alert.confidence}%` : 'not provided',
+            label: 'Độ tin cậy',
+            value: alert.confidence !== undefined ? `${alert.confidence}%` : 'chưa có',
           },
-          { label: 'Source IP', value: alert.sourceIp ?? 'not provided' },
-          { label: 'Target IP', value: alert.targetIp ?? 'not provided' },
-          { label: 'Protocol', value: alert.protocol ?? 'not provided' },
-          { label: 'Observed At', value: alert.observedAt ?? 'not provided' },
+          { label: 'IP nguồn', value: alert.sourceIp ?? 'chưa có' },
+          { label: 'IP đích', value: alert.targetIp ?? 'chưa có' },
+          { label: 'Giao thức', value: alert.protocol ?? 'chưa có' },
+          { label: 'Ghi nhận lúc', value: alert.observedAt ?? 'chưa có' },
         ]}
       />
       <NormalizeAlertButton alertId={alert.alertId} />
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Raw Payload</h3>
+        <h3 className="text-lg font-semibold">Payload thô</h3>
         <pre className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100">
           {JSON.stringify(alert.rawPayload, null, 2)}
         </pre>

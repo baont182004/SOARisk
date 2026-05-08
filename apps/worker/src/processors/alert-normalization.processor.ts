@@ -159,6 +159,7 @@ function mapNormalizedAlertForPersistence(normalizedAlert: NormalizedAlertDraft)
     hostname: normalizedAlert.hostname,
     assetId: normalizedAlert.assetId,
     assetContext: normalizedAlert.assetContext,
+    additionalContext: normalizedAlert.additionalContext,
     evidence: normalizedAlert.evidence,
     normalizationStatus: normalizedAlert.normalizationStatus,
     normalizationNotes: normalizedAlert.normalizationNotes,

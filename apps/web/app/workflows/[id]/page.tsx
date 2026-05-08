@@ -13,11 +13,11 @@ export default async function WorkflowDetailPage({
     <>
       <PageIntro
         title={`Workflow ${id}`}
-        role="Workflow Detail"
-        description="This page shows ordered workflow steps, execution logs, approval state, and mock-only workflow progress derived from the selected playbook."
+        role="Chi tiết workflow"
+        description="Hiển thị các bước workflow, log thực thi, trạng thái phê duyệt và tiến trình mô phỏng sinh từ playbook đã chọn."
       />
       <WorkflowDetail executionId={id} />
-      <FutureNote note="Approving a workflow step only continues the mock workflow. No external blocking, isolation, or response action is executed." />
+      <FutureNote note="Phê duyệt bước workflow chỉ cho luồng mô phỏng tiếp tục. Không có chặn, cô lập hay phản hồi thật bên ngoài." />
     </>
   );
 }

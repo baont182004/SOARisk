@@ -60,27 +60,29 @@ export const RAW_ALERT_MOCK_SCENARIOS = [
   'sql-injection',
   'xss',
   'suspicious-dns',
+  'botnet-c2',
 ] as const;
 
 export const SEED_PLAYBOOK_IDS = [
-  'PB-001',
-  'PB-002',
-  'PB-003',
-  'PB-004',
-  'PB-005',
-  'PB-006',
-  'PB-007',
-  'PB-008',
-  'PB-009',
-  'PB-010',
+  ...Array.from({ length: 30 }, (_, index) => `PB-${String(index + 1).padStart(3, '0')}`),
 ] as const;
 
 export const CORE_PLAYBOOK_ALERT_TYPES = [
   AlertType.PORT_SCAN,
-  AlertType.ICMP_FLOOD,
   AlertType.WEB_SQL_INJECTION,
-  AlertType.WEB_XSS,
   AlertType.SUSPICIOUS_DNS_QUERY,
+  AlertType.BRUTE_FORCE,
+  AlertType.PHISHING,
+  AlertType.MALWARE,
+  AlertType.DATA_EXFILTRATION,
+] as const;
+
+export const LEGACY_DEMO_ALERT_TYPES = [
+  AlertType.ICMP_FLOOD,
+  AlertType.WEB_XSS,
+  AlertType.BOTNET_C2,
+  AlertType.MALWARE_TRAFFIC,
+  AlertType.MALWARE_HASH,
 ] as const;
 
 export const FORBIDDEN_PLAYBOOK_ACTION_NAMES = [
@@ -93,12 +95,16 @@ export const FORBIDDEN_PLAYBOOK_ACTION_NAMES = [
 ] as const;
 
 export const RECOMMENDATION_SCORE_WEIGHTS = {
-  alertType: 35,
-  requiredFields: 20,
-  severity: 15,
+  alertType: 25,
+  mitreTechnique: 15,
+  severity: 13,
+  requiredFields: 12,
   assetContext: 10,
-  conditions: 15,
-  automation: 5,
+  indicatorContext: 8,
+  alertConfidence: 7,
+  sourceReliability: 4,
+  automation: 4,
+  historicalPerformance: 2,
 } as const;
 
 export const EXPLANATION_DEFAULT_LIMITATIONS = [

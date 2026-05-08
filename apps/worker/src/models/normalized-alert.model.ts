@@ -6,6 +6,7 @@ import {
 } from '@soc-soar/shared';
 import {
   Schema,
+  SchemaTypes,
   model,
   models,
   type HydratedDocument,
@@ -50,6 +51,7 @@ export interface NormalizedAlertRecord {
   hostname?: string;
   assetId?: string;
   assetContext: AssetContextEntry[];
+  additionalContext?: Record<string, unknown>;
   evidence: AlertEvidenceEntry[];
   normalizationStatus: NormalizedAlertStatus;
   normalizationNotes: string[];
@@ -110,6 +112,7 @@ const NormalizedAlertSchema = new Schema<NormalizedAlertRecord>(
     hostname: { type: String },
     assetId: { type: String, index: true },
     assetContext: { type: [AssetContextEntrySchema], default: [] },
+    additionalContext: { type: SchemaTypes.Mixed },
     evidence: { type: [AlertEvidenceEntrySchema], default: [] },
     normalizationStatus: {
       type: String,

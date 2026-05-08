@@ -12,12 +12,12 @@ export default async function ExplanationDetailPage({
   return (
     <>
       <PageIntro
-        title={`Explanation ${id}`}
-        role="Explanation Detail"
-        description="This page converts recommendation scoring into analyst-readable explanation sections, playbook-level rationale, approval notes, and explicit limitations."
+        title={`Giải thích ${id}`}
+        role="Chi tiết giải thích"
+        description="Chuyển điểm khuyến nghị thành các phần giải thích dễ đọc: lý do theo playbook, ghi chú phê duyệt và giới hạn."
       />
       <ExplanationDetail explanationId={id} />
-      <FutureNote note="Explanation text is deterministic and decision-support only. It does not execute, approve, or simulate operational response actions." />
+      <FutureNote note="Nội dung giải thích chỉ hỗ trợ quyết định. Nó không thực thi, phê duyệt hay mô phỏng hành động phản hồi." />
     </>
   );
 }

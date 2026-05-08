@@ -5,11 +5,11 @@ type DetailCardProps = {
 
 export function DetailCard({ title, items }: DetailCardProps) {
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <h3 className="text-lg font-semibold">{title}</h3>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {items.map((item) => (
-          <div key={item.label} className="rounded-2xl bg-[var(--panel-muted)] p-4">
+          <div key={item.label} className="rounded-xl bg-[var(--panel-muted)] p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {item.label}
             </p>

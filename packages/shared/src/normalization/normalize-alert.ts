@@ -81,6 +81,7 @@ export function normalizeRawAlert(rawAlert: RawAlert): NormalizationResult {
   }
 
   const assetContext = buildAssetContext(rawAlert);
+  const additionalContext = buildAdditionalContext(rawAlert, assetContext);
 
   return {
     normalizedAlert: {
@@ -91,6 +92,7 @@ export function normalizeRawAlert(rawAlert: RawAlert): NormalizationResult {
       severity,
       confidence,
       assetContext,
+      additionalContext,
       evidence,
       normalizationStatus: NormalizedAlertStatus.NORMALIZED,
       normalizationNotes: notes,
@@ -113,6 +115,83 @@ export function normalizeRawAlert(rawAlert: RawAlert): NormalizationResult {
     notes,
     evidence,
   };
+}
+
+function buildAdditionalContext(rawAlert: RawAlert, assetContext: AssetContext[]) {
+  const rawPayload = rawAlert.rawPayload ?? {};
+  const targetCriticality = assetContext.find((entry) => entry.criticality)?.criticality;
+  const destinationPorts =
+    Array.isArray(rawPayload.ports) && rawPayload.ports.length > 0
+      ? rawPayload.ports
+      : rawAlert.targetPort !== undefined
+        ? [rawAlert.targetPort]
+        : undefined;
+
+  return {
+    ...rawPayload,
+    ...(rawAlert.sourceIp ? { sourceIp: rawAlert.sourceIp } : {}),
+    ...(rawAlert.targetIp
+      ? {
+          targetIp: rawAlert.targetIp,
+          destinationIp: rawAlert.targetIp,
+        }
+      : {}),
+    ...(destinationPorts ? { destinationPorts } : {}),
+    ...(rawAlert.targetPort !== undefined ? { destinationPort: rawAlert.targetPort } : {}),
+    ...(rawAlert.httpUri
+      ? {
+          httpUri: rawAlert.httpUri,
+          url: rawAlert.httpUri,
+        }
+      : {}),
+    ...(rawAlert.dnsQuery
+      ? {
+          dnsQuery: rawAlert.dnsQuery,
+          domain: rawAlert.dnsQuery,
+        }
+      : {}),
+    ...(rawAlert.username
+      ? {
+          username: rawAlert.username,
+          targetUser: rawAlert.username,
+        }
+      : {}),
+    ...(rawAlert.hostname
+      ? {
+          hostname: rawAlert.hostname,
+          hostId: rawAlert.hostname,
+        }
+      : {}),
+    ...(targetCriticality ? { targetAssetCriticality: targetCriticality } : {}),
+    confidence: normalizeConfidence(rawAlert.confidence),
+    sourceReliability: inferSourceReliability(rawAlert.source),
+    timeWindow: typeof rawPayload.timeWindow === 'string' ? rawPayload.timeWindow : '15m',
+    tags: rawAlert.tags,
+  };
+}
+
+function normalizeConfidence(confidence: number | undefined) {
+  if (confidence === undefined) {
+    return 0.6;
+  }
+
+  return confidence > 1 ? Number((confidence / 100).toFixed(4)) : confidence;
+}
+
+function inferSourceReliability(source: RawAlert['source']) {
+  switch (source) {
+    case 'wazuh':
+    case 'suricata':
+    case 'zeek':
+      return 0.82;
+    case 'manual':
+      return 0.7;
+    case 'pcap_demo':
+    case 'mock':
+      return 0.66;
+    default:
+      return 0.6;
+  }
 }
 
 function buildInferenceContext(rawAlert: RawAlert) {

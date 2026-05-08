@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
 import { GenerateRecommendationButton } from './generate-recommendation-button';
+import { StatusBadge } from './status-badge';
 
 export function NormalizedAlertsTable() {
   const [alerts, setAlerts] = useState<NormalizedAlert[]>([]);
@@ -35,7 +36,7 @@ export function NormalizedAlertsTable() {
         }
 
         setError(
-          loadError instanceof Error ? loadError.message : 'Failed to load normalized alerts.',
+          loadError instanceof Error ? loadError.message : 'Không tải được cảnh báo chuẩn hóa.',
         );
       } finally {
         if (active) {
@@ -54,7 +55,7 @@ export function NormalizedAlertsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading normalized alerts from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải cảnh báo chuẩn hóa từ API...</p>
       </section>
     );
   }
@@ -71,7 +72,7 @@ export function NormalizedAlertsTable() {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <p className="text-sm text-slate-600">
-          No normalized alerts exist yet. Create or normalize a raw alert first.
+          Chưa có cảnh báo chuẩn hóa. Hãy chuẩn hóa một cảnh báo thô trước.
         </p>
       </section>
     );
@@ -80,23 +81,21 @@ export function NormalizedAlertsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Normalized Alerts</h3>
-        <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          Live API
-        </span>
+        <h3 className="text-lg font-semibold">Cảnh báo chuẩn hóa</h3>
+        <StatusBadge status="live_api" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] text-slate-500">
-              <th className="px-3 py-3 font-semibold">Normalized Alert ID</th>
+              <th className="px-3 py-3 font-semibold">ID chuẩn hóa</th>
               <th className="px-3 py-3 font-semibold">Raw Alert ID</th>
-              <th className="px-3 py-3 font-semibold">Alert Type</th>
-              <th className="px-3 py-3 font-semibold">Severity</th>
-              <th className="px-3 py-3 font-semibold">Confidence</th>
-              <th className="px-3 py-3 font-semibold">Status</th>
-              <th className="px-3 py-3 font-semibold">Created At</th>
-              <th className="px-3 py-3 font-semibold">Recommendation</th>
+              <th className="px-3 py-3 font-semibold">Loại alert</th>
+              <th className="px-3 py-3 font-semibold">Mức độ</th>
+              <th className="px-3 py-3 font-semibold">Độ tin cậy</th>
+              <th className="px-3 py-3 font-semibold">Trạng thái</th>
+              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
+              <th className="px-3 py-3 font-semibold">Khuyến nghị</th>
             </tr>
           </thead>
           <tbody>
@@ -114,7 +113,7 @@ export function NormalizedAlertsTable() {
                 <td className="px-3 py-3">{alert.alertType}</td>
                 <td className="px-3 py-3">{alert.severity}</td>
                 <td className="px-3 py-3">{alert.confidence}%</td>
-                <td className="px-3 py-3">{alert.normalizationStatus}</td>
+                <td className="px-3 py-3"><StatusBadge status={alert.normalizationStatus} /></td>
                 <td className="px-3 py-3">{new Date(alert.createdAt).toLocaleString()}</td>
                 <td className="px-3 py-3">
                   <GenerateRecommendationButton normalizedAlertId={alert.normalizedAlertId} />

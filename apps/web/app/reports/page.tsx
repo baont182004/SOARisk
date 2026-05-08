@@ -1,22 +1,17 @@
-import { EmptyState } from '../../components/empty-state';
 import { FutureNote } from '../../components/future-note';
 import { PageIntro } from '../../components/page-intro';
-import { PlaceholderTable } from '../../components/placeholder-table';
+import { ReportsTable } from '../../components/reports-table';
 
 export default function ReportsPage() {
   return (
     <>
       <PageIntro
-        title="Reports"
-        role="Outcome Summaries"
-        description="This page will host generated incident summaries after workflow completion. It is intended for analyst review, export, and future audit use."
+        title="Báo cáo (Report)"
+        role="Tổng hợp kết quả xử lý"
+        description="Danh sách báo cáo incident được sinh sau khi workflow mô phỏng hoàn thành, bị từ chối hoặc bị hủy."
       />
-      <PlaceholderTable
-        title="Generated Reports"
-        columns={['Report ID', 'Incident ID', 'Final Status', 'Created At']}
-      />
-      <EmptyState message="Report rendering is not connected yet. Future implementation will populate narrative summaries and execution outcomes." />
-      <FutureNote note="Report generation should eventually summarize alert context, playbook selection, approval history, workflow execution, and incident closure." />
+      <ReportsTable />
+      <FutureNote note="Báo cáo tổng hợp alert, cảnh báo chuẩn hóa, playbook, giải thích, log workflow, quyết định phê duyệt và trạng thái incident cuối." />
     </>
   );
 }

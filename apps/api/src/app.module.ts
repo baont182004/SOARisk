@@ -5,6 +5,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AlertsModule } from './alerts/alerts.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { AssetsModule } from './assets/assets.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { DemoModule } from './demo/demo.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
 import { ExplanationsModule } from './explanations/explanations.module';
 import { HealthModule } from './health/health.module';
 import { IncidentsModule } from './incidents/incidents.module';
@@ -49,6 +52,9 @@ import { WorkflowsModule } from './workflows/workflows.module';
     AssetsModule,
     PcapDemoModule,
     JobsModule,
+    DashboardModule,
+    EvaluationModule,
+    DemoModule,
   ],
 })
 export class AppModule {}

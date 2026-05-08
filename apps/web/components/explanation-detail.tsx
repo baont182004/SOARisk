@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
 import { DetailCard } from './detail-card';
 import { EmptyState } from './empty-state';
+import { formatStatusVi } from './status-badge';
 
 type ExplanationDetailProps = {
   explanationId: string;
@@ -38,7 +39,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load explanation.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được giải thích.');
       } finally {
         if (active) {
           setLoading(false);
@@ -56,7 +57,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading explanation detail...</p>
+        <p className="text-sm text-slate-600">Đang tải chi tiết giải thích...</p>
       </section>
     );
   }
@@ -70,34 +71,34 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
   }
 
   if (!explanation) {
-    return <EmptyState message="Explanation not found." />;
+    return <EmptyState message="Không tìm thấy giải thích." />;
   }
 
   return (
     <div className="space-y-6">
       <DetailCard
-        title="Explanation Summary"
+        title="Tóm tắt giải thích"
         items={[
           { label: 'Explanation ID', value: explanation.explanationId },
           { label: 'Recommendation ID', value: explanation.recommendationId },
-          { label: 'Normalized Alert ID', value: explanation.normalizedAlertId },
+          { label: 'Alert chuẩn hóa', value: explanation.normalizedAlertId },
           { label: 'Raw Alert ID', value: explanation.alertId },
-          { label: 'Top Playbook', value: explanation.topPlaybookId },
-          { label: 'Status', value: explanation.status },
+          { label: 'Playbook Top-1', value: explanation.topPlaybookId },
+          { label: 'Trạng thái', value: formatStatusVi(explanation.status) },
           {
-            label: 'Selected Playbook',
-            value: explanation.selectedPlaybookId ?? 'not selected',
+            label: 'Playbook đã chọn',
+            value: explanation.selectedPlaybookId ?? 'chưa chọn',
           },
         ]}
       />
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Summary</h3>
+        <h3 className="text-lg font-semibold">Tóm tắt</h3>
         <p className="mt-3 text-sm leading-6 text-slate-700">{explanation.summary}</p>
       </section>
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Explanation Sections</h3>
+        <h3 className="text-lg font-semibold">Các phần giải thích</h3>
         <div className="mt-4 space-y-4">
           {explanation.sections.map((section) => (
             <div key={`${section.type}-${section.title}`} className="rounded-2xl bg-[var(--panel-muted)] p-4">
@@ -115,7 +116,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
               <p className="mt-2 text-sm leading-6 text-slate-700">{section.content}</p>
               {section.evidenceRefs && section.evidenceRefs.length > 0 ? (
                 <p className="mt-3 text-xs text-slate-500">
-                  Evidence refs: {section.evidenceRefs.join(', ')}
+                  Tham chiếu bằng chứng: {section.evidenceRefs.join(', ')}
                 </p>
               ) : null}
             </div>
@@ -124,33 +125,33 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
       </section>
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Per-Playbook Explanations</h3>
+        <h3 className="text-lg font-semibold">Giải thích theo playbook</h3>
         <div className="mt-4 space-y-4">
           {explanation.playbookExplanations.map((playbook) => (
             <div key={playbook.playbookId} className="rounded-2xl bg-[var(--panel-muted)] p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-800">
-                  Rank {playbook.rank}
+                  Hạng {playbook.rank}
                 </span>
                 <span className="font-semibold text-slate-900">{playbook.playbookId}</span>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                   {playbook.decision}
                 </span>
                 <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-                  Score {playbook.totalScore}
+                  Điểm {playbook.totalScore}
                 </span>
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-700">{playbook.summary}</p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <StringList title="Score Explanation" items={playbook.scoreExplanation} />
-                <StringList title="Matched Reasons" items={playbook.matchedReasons} />
+                <StringList title="Giải thích điểm" items={playbook.scoreExplanation} />
+                <StringList title="Lý do khớp" items={playbook.matchedReasons} />
                 <StringList
-                  title="Missing Fields"
+                  title="Trường còn thiếu"
                   items={playbook.missingFields}
-                  emptyText="No missing required fields."
+                  emptyText="Không thiếu trường bắt buộc."
                 />
-                <StringList title="Approval Notes" items={playbook.approvalNotes} />
-                <StringList title="Limitations" items={playbook.limitations} />
+                <StringList title="Ghi chú phê duyệt" items={playbook.approvalNotes} />
+                <StringList title="Giới hạn" items={playbook.limitations} />
               </div>
             </div>
           ))}
@@ -158,8 +159,8 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <StringPanel title="Limitations" items={explanation.limitations} />
-        <StringPanel title="Analyst Guidance" items={explanation.analystGuidance} />
+        <StringPanel title="Giới hạn" items={explanation.limitations} />
+        <StringPanel title="Gợi ý cho analyst" items={explanation.analystGuidance} />
       </div>
     </div>
   );
@@ -187,7 +188,7 @@ function StringPanel({
 function StringList({
   title,
   items,
-  emptyText = 'None.',
+  emptyText = 'Không có.',
 }: {
   title: string;
   items: string[];

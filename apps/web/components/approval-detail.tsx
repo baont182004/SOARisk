@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
 import { DetailCard } from './detail-card';
 import { EmptyState } from './empty-state';
+import { formatStatusVi } from './status-badge';
 
 type ApprovalDecisionResponse = {
   approvalRequest: ApprovalRequest;
@@ -46,7 +47,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load approval.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được chi tiết phê duyệt.');
       } finally {
         if (active) {
           setLoading(false);
@@ -85,7 +86,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
       setError(
         decisionError instanceof Error
           ? decisionError.message
-          : `Failed to ${decision} approval request.`,
+          : `Không thể ${decision === 'approve' ? 'phê duyệt' : 'từ chối'} yêu cầu.`,
       );
     } finally {
       setSubmitting(false);
@@ -95,7 +96,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading approval detail...</p>
+        <p className="text-sm text-slate-600">Đang tải chi tiết phê duyệt...</p>
       </section>
     );
   }
@@ -109,7 +110,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
   }
 
   if (!approval) {
-    return <EmptyState message="Approval request not found." />;
+    return <EmptyState message="Không tìm thấy yêu cầu phê duyệt." />;
   }
 
   const actionButtonsDisabled = submitting || approval.status !== 'pending';
@@ -117,25 +118,25 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
   return (
     <div className="space-y-6">
       <DetailCard
-        title="Approval Summary"
+        title="Tóm tắt phê duyệt"
         items={[
           { label: 'Approval ID', value: approval.approvalId },
           { label: 'Execution ID', value: approval.executionId },
-          { label: 'Step', value: String(approval.step) },
-          { label: 'Action', value: approval.action },
-          { label: 'Risk', value: approval.risk },
-          { label: 'Status', value: approval.status },
+          { label: 'Bước', value: String(approval.step) },
+          { label: 'Hành động', value: approval.action },
+          { label: 'Rủi ro', value: approval.risk },
+          { label: 'Trạng thái', value: formatStatusVi(approval.status) },
           {
-            label: 'Requested At',
-            value: approval.requestedAt ? new Date(approval.requestedAt).toLocaleString() : 'n/a',
+            label: 'Yêu cầu lúc',
+            value: approval.requestedAt ? new Date(approval.requestedAt).toLocaleString() : 'chưa có',
           },
-          { label: 'Decided By', value: approval.decidedBy ?? 'not provided' },
+          { label: 'Người quyết định', value: approval.decidedBy ?? 'chưa có' },
         ]}
       />
 
       <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
         <p className="text-sm font-medium text-amber-950">
-          Approval continues mock workflow only. No real external security action is executed.
+          Phê duyệt chỉ cho workflow demo tiếp tục. Không có hành động bảo mật thật bên ngoài được thực thi.
         </p>
       </section>
 
@@ -143,29 +144,29 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
         <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold">Workflow Link</h3>
+              <h3 className="text-lg font-semibold">Workflow liên kết</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Workflow status after this approval decision.
+                Trạng thái workflow sau quyết định phê duyệt.
               </p>
             </div>
             <Link
               className="rounded-xl border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-800"
               href={`/workflows/${workflow.executionId}`}
             >
-              View Workflow
+              Xem workflow
             </Link>
           </div>
           <p className="mt-3 text-sm text-slate-700">
-            Workflow status: {workflow.status}. Current step: {workflow.currentStep}.
+            Trạng thái workflow: {formatStatusVi(workflow.status)}. Bước hiện tại: {workflow.currentStep}.
           </p>
         </section>
       ) : null}
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Decision Input</h3>
+        <h3 className="text-lg font-semibold">Thông tin quyết định</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Decided By</span>
+            <span className="text-sm font-medium text-slate-700">Người quyết định</span>
             <input
               className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-slate-800"
               onChange={(event) => setDecidedBy(event.target.value)}
@@ -174,11 +175,11 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Decision Reason</span>
+            <span className="text-sm font-medium text-slate-700">Lý do quyết định</span>
             <input
               className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-slate-800"
               onChange={(event) => setDecisionReason(event.target.value)}
-              placeholder="Approved mock continuation after analyst review."
+              placeholder="Đã kiểm tra và cho phép workflow mô phỏng tiếp tục."
               value={decisionReason}
             />
           </label>
@@ -190,7 +191,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
             onClick={() => handleDecision('approve')}
             type="button"
           >
-            {submitting ? 'Submitting...' : 'Approve'}
+            {submitting ? 'Đang gửi...' : 'Phê duyệt'}
           </button>
           <button
             className="rounded-xl border border-rose-700 px-4 py-2 text-sm font-semibold text-rose-800 disabled:cursor-not-allowed disabled:opacity-60"
@@ -198,7 +199,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
             onClick={() => handleDecision('reject')}
             type="button"
           >
-            {submitting ? 'Submitting...' : 'Reject'}
+            {submitting ? 'Đang gửi...' : 'Từ chối'}
           </button>
         </div>
       </section>

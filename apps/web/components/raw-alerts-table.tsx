@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { StatusBadge } from './status-badge';
 
 export function RawAlertsTable() {
   const [alerts, setAlerts] = useState<RawAlert[]>([]);
@@ -30,7 +31,7 @@ export function RawAlertsTable() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load alerts.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được danh sách cảnh báo.');
       } finally {
         if (active) {
           setLoading(false);
@@ -48,7 +49,7 @@ export function RawAlertsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading raw alerts from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải cảnh báo thô từ API...</p>
       </section>
     );
   }
@@ -64,7 +65,7 @@ export function RawAlertsTable() {
   if (alerts.length === 0) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">No raw alerts have been ingested yet.</p>
+        <p className="text-sm text-slate-600">Chưa có cảnh báo thô. Hãy chạy Demo Wizard hoặc PCAP demo để tạo dữ liệu.</p>
       </section>
     );
   }
@@ -72,23 +73,21 @@ export function RawAlertsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Raw Alert Feed</h3>
-        <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          Live API
-        </span>
+        <h3 className="text-lg font-semibold">Luồng cảnh báo thô</h3>
+        <StatusBadge status="live_api" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] text-slate-500">
               <th className="px-3 py-3 font-semibold">Alert ID</th>
-              <th className="px-3 py-3 font-semibold">Title</th>
-              <th className="px-3 py-3 font-semibold">Source</th>
-              <th className="px-3 py-3 font-semibold">Alert Type</th>
-              <th className="px-3 py-3 font-semibold">Severity</th>
-              <th className="px-3 py-3 font-semibold">Confidence</th>
-              <th className="px-3 py-3 font-semibold">Created At</th>
-              <th className="px-3 py-3 font-semibold">Action</th>
+              <th className="px-3 py-3 font-semibold">Tiêu đề</th>
+              <th className="px-3 py-3 font-semibold">Nguồn</th>
+              <th className="px-3 py-3 font-semibold">Loại alert</th>
+              <th className="px-3 py-3 font-semibold">Mức độ</th>
+              <th className="px-3 py-3 font-semibold">Độ tin cậy</th>
+              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
+              <th className="px-3 py-3 font-semibold">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -97,15 +96,15 @@ export function RawAlertsTable() {
                 <td className="px-3 py-3 font-mono text-xs">{alert.alertId}</td>
                 <td className="px-3 py-3">{alert.title}</td>
                 <td className="px-3 py-3 capitalize">{alert.source.replaceAll('_', ' ')}</td>
-                <td className="px-3 py-3">{alert.alertType ?? 'pending inference'}</td>
-                <td className="px-3 py-3">{alert.severity ?? 'not set'}</td>
+                <td className="px-3 py-3">{alert.alertType ?? 'chờ suy luận'}</td>
+                <td className="px-3 py-3">{alert.severity ?? 'chưa đặt'}</td>
                 <td className="px-3 py-3">
-                  {alert.confidence !== undefined ? `${alert.confidence}%` : 'not set'}
+                  {alert.confidence !== undefined ? `${alert.confidence}%` : 'chưa đặt'}
                 </td>
                 <td className="px-3 py-3">{new Date(alert.createdAt).toLocaleString()}</td>
                 <td className="px-3 py-3">
                   <Link className="text-teal-700 underline" href={`/alerts/${alert.alertId}`}>
-                    View detail
+                    Xem chi tiết
                   </Link>
                 </td>
               </tr>

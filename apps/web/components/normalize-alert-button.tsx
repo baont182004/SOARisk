@@ -34,7 +34,7 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
       setMessage(response.message);
       setNormalizedAlertId(response.data.normalizedAlertId);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to normalize alert.');
+      setMessage(error instanceof Error ? error.message : 'Không thể chuẩn hóa cảnh báo.');
       setNormalizedAlertId(null);
     } finally {
       setPendingAction(null);
@@ -57,7 +57,7 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
       setQueuedJob(response.data);
       setJobStatus(null);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to queue normalization job.');
+      setMessage(error instanceof Error ? error.message : 'Không thể đưa job chuẩn hóa vào queue.');
       setQueuedJob(null);
       setJobStatus(null);
     } finally {
@@ -84,7 +84,7 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
       setMessage(response.message);
       setJobStatus(response.data);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to check job status.');
+      setMessage(error instanceof Error ? error.message : 'Không thể kiểm tra trạng thái job.');
       setJobStatus(null);
     } finally {
       setPendingAction(null);
@@ -100,7 +100,7 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
           onClick={handleNormalizeNow}
           type="button"
         >
-          {pendingAction === 'sync' ? 'Normalizing...' : 'Normalize Now'}
+          {pendingAction === 'sync' ? 'Đang chuẩn hóa...' : 'Chuẩn hóa ngay'}
         </button>
         <button
           className="rounded-xl border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
@@ -108,7 +108,7 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
           onClick={handleQueueNormalization}
           type="button"
         >
-          {pendingAction === 'queue' ? 'Queueing...' : 'Queue Normalization'}
+          {pendingAction === 'queue' ? 'Đang xếp hàng...' : 'Đưa vào queue'}
         </button>
         {queuedJob ? (
           <button
@@ -117,24 +117,23 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
             onClick={handleCheckJobStatus}
             type="button"
           >
-            {pendingAction === 'status' ? 'Checking...' : 'Check Job Status'}
+            {pendingAction === 'status' ? 'Đang kiểm tra...' : 'Kiểm tra job'}
           </button>
         ) : null}
       </div>
       <p className="mt-3 text-sm text-slate-600">
-        Use <span className="font-semibold">Normalize Now</span> for synchronous testing, or{' '}
-        <span className="font-semibold">Queue Normalization</span> to send the alert to the
-        BullMQ worker.
+        Dùng <span className="font-semibold">Chuẩn hóa ngay</span> để kiểm thử đồng bộ, hoặc{' '}
+        <span className="font-semibold">Đưa vào queue</span> để gửi cảnh báo sang worker BullMQ.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         {normalizedAlertId ? (
           <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-            Sync output {normalizedAlertId}
+            Kết quả đồng bộ {normalizedAlertId}
           </span>
         ) : null}
         {queuedJob ? (
           <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-            Job {queuedJob.jobId} is {queuedJob.status}
+            Job {queuedJob.jobId}: {queuedJob.status}
           </span>
         ) : null}
       </div>
@@ -145,14 +144,14 @@ export function NormalizeAlertButton({ alertId }: NormalizeAlertButtonProps) {
             <span className="font-semibold">Job ID:</span> {jobStatus.jobId}
           </p>
           <p className="mt-1">
-            <span className="font-semibold">State:</span> {jobStatus.state}
+            <span className="font-semibold">Trạng thái:</span> {jobStatus.state}
           </p>
           <p className="mt-1">
             <span className="font-semibold">Queue:</span> {jobStatus.queueName}
           </p>
           {jobStatus.failedReason ? (
             <p className="mt-1 text-rose-700">
-              <span className="font-semibold">Failure:</span> {jobStatus.failedReason}
+              <span className="font-semibold">Lỗi:</span> {jobStatus.failedReason}
             </p>
           ) : null}
           {jobStatus.returnvalue ? (

@@ -6,12 +6,12 @@ export default function ExplanationsPage() {
   return (
     <>
       <PageIntro
-        title="Explanations"
-        role="Recommendation Explanation"
-        description="This page lists deterministic explanation snapshots that translate recommendation scoring into analyst-readable rationale, limitations, and approval guidance."
+        title="Giải thích khuyến nghị"
+        role="Explanation engine"
+        description="Danh sách bản giải thích biến điểm khuyến nghị thành lý do dễ đọc cho analyst: vì sao chọn playbook, giới hạn và gợi ý phê duyệt."
       />
       <ExplanationsTable />
-      <FutureNote note="Explanation records are deterministic and non-operational in Phase 7A. Analyst approval and workflow execution remain later phases." />
+      <FutureNote note="Giải thích chỉ hỗ trợ quyết định, không tự phê duyệt hoặc thực thi hành động phản hồi." />
     </>
   );
 }

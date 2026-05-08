@@ -12,12 +12,12 @@ export default async function RecommendationDetailPage({
   return (
     <>
       <PageIntro
-        title={`Recommendation ${id}`}
-        role="Recommendation Detail"
-        description="This page shows ranked playbook candidates, score breakdowns, matched reasons, missing fields, manual playbook selection, and explanation generation without starting workflow execution."
+        title={`Khuyến nghị ${id}`}
+        role="Chi tiết khuyến nghị"
+        description="Hiển thị playbook ứng viên đã xếp hạng, phân rã điểm, lý do khớp, trường còn thiếu, lựa chọn thủ công và tạo giải thích."
       />
       <RecommendationDetail recommendationId={id} />
-      <FutureNote note="Selecting a playbook or generating an explanation updates recommendation and explanation state only. It does not create incidents or start workflows yet." />
+      <FutureNote note="Chọn playbook hoặc tạo giải thích chỉ cập nhật trạng thái khuyến nghị và giải thích, trước khi workflow được khởi chạy." />
     </>
   );
 }

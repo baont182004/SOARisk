@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { StatusBadge } from './status-badge';
 
 export function ExplanationsTable() {
   const [explanations, setExplanations] = useState<RecommendationExplanation[]>([]);
@@ -33,7 +34,7 @@ export function ExplanationsTable() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load explanations.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được giải thích.');
       } finally {
         if (active) {
           setLoading(false);
@@ -51,7 +52,7 @@ export function ExplanationsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading explanations from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải giải thích từ API...</p>
       </section>
     );
   }
@@ -68,7 +69,7 @@ export function ExplanationsTable() {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <p className="text-sm text-slate-600">
-          No explanations exist yet. Generate one from a recommendation first.
+          Chưa có giải thích. Hãy tạo giải thích từ một khuyến nghị.
         </p>
       </section>
     );
@@ -77,10 +78,8 @@ export function ExplanationsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Explanations</h3>
-        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-          Live API
-        </span>
+        <h3 className="text-lg font-semibold">Giải thích khuyến nghị</h3>
+        <StatusBadge status="live_api" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
@@ -88,10 +87,10 @@ export function ExplanationsTable() {
             <tr className="border-b border-[var(--border)] text-slate-500">
               <th className="px-3 py-3 font-semibold">Explanation ID</th>
               <th className="px-3 py-3 font-semibold">Recommendation ID</th>
-              <th className="px-3 py-3 font-semibold">Normalized Alert</th>
-              <th className="px-3 py-3 font-semibold">Top Playbook</th>
-              <th className="px-3 py-3 font-semibold">Status</th>
-              <th className="px-3 py-3 font-semibold">Created At</th>
+              <th className="px-3 py-3 font-semibold">Alert chuẩn hóa</th>
+              <th className="px-3 py-3 font-semibold">Playbook Top-1</th>
+              <th className="px-3 py-3 font-semibold">Trạng thái</th>
+              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
             </tr>
           </thead>
           <tbody>
@@ -111,11 +110,11 @@ export function ExplanationsTable() {
                 <td className="px-3 py-3">{explanation.recommendationId}</td>
                 <td className="px-3 py-3">{explanation.normalizedAlertId}</td>
                 <td className="px-3 py-3">{explanation.topPlaybookId}</td>
-                <td className="px-3 py-3">{explanation.status}</td>
+                <td className="px-3 py-3"><StatusBadge status={explanation.status} /></td>
                 <td className="px-3 py-3">
                   {explanation.createdAt
                     ? new Date(explanation.createdAt).toLocaleString()
-                    : 'n/a'}
+                    : 'chưa có'}
                 </td>
               </tr>
             ))}

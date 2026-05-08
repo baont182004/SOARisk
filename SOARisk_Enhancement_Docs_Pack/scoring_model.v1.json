@@ -1,0 +1,73 @@
+{
+  "modelId": "SOARISK-RS-V2",
+  "modelName": "SOARisk Explainable Weighted Playbook Recommendation",
+  "version": "1.0.0",
+  "purpose": "Rank candidate playbooks for a normalized alert using transparent, auditable criteria rather than opaque AI.",
+  "scoreRange": [
+    0,
+    100
+  ],
+  "weights": {
+    "alertTypeMatch": 0.25,
+    "mitreTechniqueMatch": 0.15,
+    "severityMatch": 0.13,
+    "requiredFieldCoverage": 0.12,
+    "assetCriticalityMatch": 0.1,
+    "indicatorContextMatch": 0.08,
+    "alertConfidence": 0.07,
+    "sourceReliability": 0.04,
+    "automationSuitability": 0.04,
+    "historicalPerformance": 0.02
+  },
+  "penalties": {
+    "missingCriticalField": 0.06,
+    "unsafeAutomationRisk": 0.05,
+    "approvalRiskHigh": 0.03,
+    "approvalRiskCritical": 0.06,
+    "knownBenignSignal": 0.08,
+    "conflictingMitreContext": 0.07
+  },
+  "thresholds": {
+    "highConfidence": 78,
+    "mediumConfidence": 62,
+    "lowConfidence": 0,
+    "ambiguousTopGap": 5,
+    "minimumRecommendableScore": 45
+  },
+  "tieBreakers": [
+    "higherRequiredFieldCoverage",
+    "lowerApprovalRisk",
+    "higherHistoricalSuccessRate",
+    "newerPlaybookVersion",
+    "lexicographicPlaybookId"
+  ],
+  "formula": "score = 100 * sum(weight_i * component_i) - 100 * sum(penalty_j); clamp to [0,100]",
+  "componentDefinitions": {
+    "alertTypeMatch": "1 when normalizedAlert.alertType is in playbook.alertTypes; 0.35 for related category; 0 otherwise.",
+    "mitreTechniqueMatch": "1 when at least one alert MITRE technique exactly matches the playbook; 0.7 for same tactic; 0 when unavailable; neutral 0.5 may be used only when alert lacks MITRE mapping.",
+    "severityMatch": "1 exact/in-range match; 0.7 if adjacent severity; 0.3 otherwise.",
+    "requiredFieldCoverage": "count(requiredFields present and non-empty) / count(requiredFields).",
+    "assetCriticalityMatch": "1 if alert asset criticality is in affinity list; 0.7 if adjacent; 0.4 if missing; 0.2 if mismatched.",
+    "indicatorContextMatch": "Positive signal coverage minus benign/conflicting signal pressure, normalized to [0,1].",
+    "alertConfidence": "normalizedAlert.confidence or 0.5 default for demo alerts.",
+    "sourceReliability": "Reliability of alert source, e.g., EDR/WAF/SIEM/manual report, default 0.6.",
+    "automationSuitability": "playbook.automationSuitability adjusted down when analyst approval risk is high.",
+    "historicalPerformance": "0.5 default; otherwise based on playbook success rate and analyst acceptance rate."
+  },
+  "explanationTemplate": {
+    "summary": "Recommended because {topPositiveReasons}; downgraded by {topNegativeReasons}.",
+    "scoreBreakdownFields": [
+      "criterion",
+      "weight",
+      "componentScore",
+      "weightedContribution",
+      "evidence"
+    ],
+    "mustShow": [
+      "missingRequiredFields",
+      "approvalRisk",
+      "automationSuitability",
+      "MITRE ATT&CK mapping"
+    ]
+  }
+}

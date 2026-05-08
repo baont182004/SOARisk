@@ -8,6 +8,8 @@ export const GENERATE_EXPLANATION_JOB_NAME = 'generate-explanation';
 export const GENERATE_EXPLANATION_QUEUE_NAME = QUEUE_NAMES.EXPLANATION;
 export const START_WORKFLOW_JOB_NAME = 'start-workflow';
 export const START_WORKFLOW_QUEUE_NAME = QUEUE_NAMES.WORKFLOW_EXECUTION;
+export const GENERATE_REPORT_JOB_NAME = 'generate-report';
+export const GENERATE_REPORT_QUEUE_NAME = QUEUE_NAMES.REPORT_GENERATION;
 
 export interface NormalizeAlertJobData {
   alertId: string;
@@ -103,6 +105,34 @@ export interface StartWorkflowQueuedResponse {
   status: 'queued';
 }
 
+export interface GenerateReportJobData {
+  executionId: string;
+  requestedAt: string;
+}
+
+export interface GenerateReportQueuedResponse {
+  jobId: string;
+  queueName: typeof GENERATE_REPORT_QUEUE_NAME;
+  jobName: typeof GENERATE_REPORT_JOB_NAME;
+  executionId: string;
+  status: 'queued';
+}
+
+export interface QueueJobStatusSnapshot {
+  jobId: string;
+  queueName: string;
+  name: string;
+  state: string;
+  progress: string | boolean | number | object;
+  data: unknown;
+  returnvalue: unknown;
+  failedReason: string | undefined;
+  attemptsMade: number;
+  timestamp: number;
+  processedOn: number | undefined;
+  finishedOn: number | undefined;
+}
+
 export function buildNormalizeAlertJobId(alertId: string) {
   return `${NORMALIZE_ALERT_JOB_NAME}__${alertId}`;
 }
@@ -117,4 +147,8 @@ export function buildGenerateExplanationJobId(recommendationId: string) {
 
 export function buildStartWorkflowJobId(executionId: string) {
   return `${START_WORKFLOW_JOB_NAME}__${executionId}`;
+}
+
+export function buildGenerateReportJobId(executionId: string) {
+  return `${GENERATE_REPORT_JOB_NAME}__${executionId}`;
 }

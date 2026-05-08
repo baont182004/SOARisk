@@ -8,12 +8,12 @@ export default function AlertsPage() {
   return (
     <>
       <PageIntro
-        title="Alerts"
-        role="Alert Intake"
-        description={`This area will display upstream security alerts before and after normalization. The initial focus is alert-driven SOAR processing, not SIEM correlation. Example supported type: ${AlertType.PORT_SCAN}.`}
+        title="Cảnh báo (Alert)"
+        role="Tiếp nhận cảnh báo"
+        description={`Danh sách cảnh báo thô từ nguồn upstream trước khi chuẩn hóa. Trọng tâm là xử lý SOAR theo cảnh báo, không phải tương quan SIEM. Ví dụ loại hỗ trợ: ${AlertType.PORT_SCAN}.`}
       />
       <RawAlertsTable />
-      <FutureNote note="Later work should distinguish raw upstream alerts from normalized SOAR-ready alert records and support analyst drill-down." />
+      <FutureNote note="Cảnh báo thô giữ vai trò đầu vào và truy vết bằng chứng; bước chuẩn hóa sẽ tạo bản ghi sẵn sàng cho SOAR." />
     </>
   );
 }

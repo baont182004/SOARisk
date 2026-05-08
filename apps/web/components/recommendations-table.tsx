@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { StatusBadge } from './status-badge';
 
 export function RecommendationsTable() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -31,7 +32,7 @@ export function RecommendationsTable() {
         }
 
         setError(
-          loadError instanceof Error ? loadError.message : 'Failed to load recommendations.',
+          loadError instanceof Error ? loadError.message : 'Không tải được danh sách khuyến nghị.',
         );
       } finally {
         if (active) {
@@ -50,7 +51,7 @@ export function RecommendationsTable() {
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading recommendations from the API...</p>
+        <p className="text-sm text-slate-600">Đang tải khuyến nghị từ API...</p>
       </section>
     );
   }
@@ -67,7 +68,7 @@ export function RecommendationsTable() {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <p className="text-sm text-slate-600">
-          No recommendations exist yet. Generate one from a normalized alert first.
+          Chưa có khuyến nghị. Hãy tạo khuyến nghị từ một cảnh báo chuẩn hóa.
         </p>
       </section>
     );
@@ -76,23 +77,21 @@ export function RecommendationsTable() {
   return (
     <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Recommendations</h3>
-        <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          Live API
-        </span>
+        <h3 className="text-lg font-semibold">Khuyến nghị playbook</h3>
+        <StatusBadge status="live_api" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] text-slate-500">
               <th className="px-3 py-3 font-semibold">Recommendation ID</th>
-              <th className="px-3 py-3 font-semibold">Normalized Alert</th>
-              <th className="px-3 py-3 font-semibold">Alert Type</th>
-              <th className="px-3 py-3 font-semibold">Severity</th>
-              <th className="px-3 py-3 font-semibold">Top Playbook</th>
-              <th className="px-3 py-3 font-semibold">Top Score</th>
-              <th className="px-3 py-3 font-semibold">Status</th>
-              <th className="px-3 py-3 font-semibold">Created At</th>
+              <th className="px-3 py-3 font-semibold">Alert chuẩn hóa</th>
+              <th className="px-3 py-3 font-semibold">Loại alert</th>
+              <th className="px-3 py-3 font-semibold">Mức độ</th>
+              <th className="px-3 py-3 font-semibold">Playbook Top-1</th>
+              <th className="px-3 py-3 font-semibold">Điểm</th>
+              <th className="px-3 py-3 font-semibold">Trạng thái</th>
+              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
             </tr>
           </thead>
           <tbody>
@@ -115,15 +114,15 @@ export function RecommendationsTable() {
                   <td className="px-3 py-3">{recommendation.normalizedAlertId}</td>
                   <td className="px-3 py-3">{recommendation.alertType}</td>
                   <td className="px-3 py-3">{recommendation.severity}</td>
-                  <td className="px-3 py-3">{topPlaybook?.playbookId ?? 'none'}</td>
+                  <td className="px-3 py-3">{topPlaybook?.playbookId ?? 'chưa có'}</td>
                   <td className="px-3 py-3">
-                    {topPlaybook ? `${topPlaybook.totalScore}` : 'n/a'}
+                    {topPlaybook ? `${topPlaybook.finalScore ?? topPlaybook.totalScore}` : 'chưa có'}
                   </td>
-                  <td className="px-3 py-3">{recommendation.status}</td>
+                  <td className="px-3 py-3"><StatusBadge status={recommendation.status} /></td>
                   <td className="px-3 py-3">
                     {recommendation.createdAt
                       ? new Date(recommendation.createdAt).toLocaleString()
-                      : 'n/a'}
+                      : 'chưa có'}
                   </td>
                 </tr>
               );

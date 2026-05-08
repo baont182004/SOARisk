@@ -1,22 +1,17 @@
-import { EmptyState } from '../../components/empty-state';
 import { FutureNote } from '../../components/future-note';
+import { IncidentsTable } from '../../components/incidents-table';
 import { PageIntro } from '../../components/page-intro';
-import { PlaceholderTable } from '../../components/placeholder-table';
 
 export default function IncidentsPage() {
   return (
     <>
       <PageIntro
-        title="Incidents"
-        role="Analyst Tracking"
-        description="This page will track incident state transitions after a recommended playbook is selected or approved. It is the analyst-facing record of SOAR activity."
+        title="Sự cố (Incident)"
+        role="Theo dõi xử lý"
+        description="Theo dõi trạng thái incident được tạo từ khuyến nghị đã chọn và cập nhật theo tiến trình workflow mô phỏng."
       />
-      <PlaceholderTable
-        title="Incident Register"
-        columns={['Incident ID', 'Title', 'Severity', 'Status', 'Updated At']}
-      />
-      <EmptyState message="Incident data has not been connected yet. The route currently reserves layout for the future incident register." />
-      <FutureNote note="Later work should add timeline rendering, assignment, approval decisions, and evidence-linked status changes." />
+      <IncidentsTable />
+      <FutureNote note="Incident tracking trong MVP tập trung vào ngữ cảnh alert, playbook đã chọn, trạng thái workflow và timeline xử lý." />
     </>
   );
 }

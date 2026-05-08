@@ -12,12 +12,12 @@ export default async function ApprovalDetailPage({
   return (
     <>
       <PageIntro
-        title={`Approval ${id}`}
-        role="Approval Detail"
-        description="This page records the analyst decision for a pending workflow step and makes it explicit that approval affects mock workflow state only."
+        title={`Phê duyệt ${id}`}
+        role="Chi tiết phê duyệt"
+        description="Ghi nhận quyết định của analyst cho bước workflow đang chờ và thể hiện rõ quyết định chỉ ảnh hưởng tới trạng thái workflow demo."
       />
       <ApprovalDetail approvalId={id} />
-      <FutureNote note="Approval or rejection updates the stored workflow state only. No real firewall, isolation, account, or host action is executed." />
+      <FutureNote note="Phê duyệt hoặc từ chối chỉ cập nhật trạng thái workflow lưu trong hệ thống. Không có hành động thật trên firewall, host hoặc tài khoản." />
     </>
   );
 }

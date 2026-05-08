@@ -43,11 +43,17 @@ export class Incident {
   @Prop({ required: true, index: true })
   normalizedAlertId!: string;
 
+  @Prop({ index: true })
+  alertId?: string;
+
   @Prop()
   selectedPlaybookId?: string;
 
   @Prop({ index: true })
   recommendationId?: string;
+
+  @Prop({ index: true })
+  executionId?: string;
 
   @Prop({ type: [TimelineEntrySchema], default: [] })
   timeline!: TimelineEntry[];

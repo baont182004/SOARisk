@@ -12,13 +12,13 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SOC SOAR Platform',
-  description: 'SOAR-oriented SOC automation thesis workspace',
+  title: 'SOARisk - Nền tảng SOAR cho SOC',
+  description: 'Không gian demo đồ án tự động hóa SOC theo định hướng SOAR',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body className={ibmPlexSans.className}>
         <div className="lg:flex">
           <Sidebar />

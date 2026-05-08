@@ -9,11 +9,11 @@ export default function PlaybooksPage() {
     <>
       <PageIntro
         title="Playbooks"
-        role="Structured Response Dataset"
-        description={`This page shows the curated response playbook dataset used for later recommendation, explanation, approval, orchestration, and reporting phases. The current Phase 5 seed contains ${SEED_PLAYBOOK_IDS.length} structured, mock-only playbooks.`}
+        role="Bộ dữ liệu phản hồi có cấu trúc"
+        description={`Danh mục playbook dùng cho khuyến nghị, giải thích, phê duyệt, điều phối và báo cáo. Bộ seed có ${SEED_PLAYBOOK_IDS.length} playbook phản hồi mô phỏng có cấu trúc.`}
       />
       <PlaybooksTable />
-      <FutureNote note="This phase focuses on structured, machine-readable playbook metadata only. Recommendation scoring and workflow execution remain future phases." />
+      <FutureNote note="Playbook là mẫu phản hồi máy đọc được. Các bước giống containment chỉ là yêu cầu demo cần analyst phê duyệt." />
     </>
   );
 }

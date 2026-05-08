@@ -7,6 +7,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
+COPY SOARisk_Enhancement_Docs_Pack ./SOARisk_Enhancement_Docs_Pack
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @soc-soar/shared build

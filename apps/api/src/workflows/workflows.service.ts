@@ -24,14 +24,14 @@ import {
 import type { Model } from 'mongoose';
 
 import { ApprovalDecisionDto } from '../approvals/dto/approval-decision.dto';
-import {
-  ApprovalRequest,
-  type ApprovalRequestDocument,
-} from '../approvals/approval-request.schema';
+import { ApprovalRequest } from '../approvals/approval-request.schema';
 import { createPaginationMeta, createSuccessResponse } from '../common/api-response.util';
 import { generateIdentifier } from '../common/query.util';
+import { IncidentsService } from '../incidents/incidents.service';
+import { NormalizedAlertsService } from '../normalized-alerts/normalized-alerts.service';
 import { PlaybooksService } from '../playbooks/playbooks.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
+import { ReportsService } from '../reports/reports.service';
 import { CreateWorkflowQueryDto } from './dto/create-workflow-query.dto';
 import { QueryWorkflowsDto } from './dto/query-workflows.dto';
 import { ExecutionLog } from './execution-log.schema';
@@ -78,6 +78,9 @@ export class WorkflowsService {
     private readonly approvalRequestModel: Model<ApprovalRequest>,
     private readonly recommendationsService: RecommendationsService,
     private readonly playbooksService: PlaybooksService,
+    private readonly normalizedAlertsService: NormalizedAlertsService,
+    private readonly incidentsService: IncidentsService,
+    private readonly reportsService: ReportsService,
   ) {}
 
   async findAll(query: QueryWorkflowsDto) {
@@ -176,6 +179,20 @@ export class WorkflowsService {
       executionId: created.executionId,
       level: ExecutionLogLevel.INFO,
       message: `Workflow execution was created from recommendation ${recommendationId} and selected playbook ${playbook.playbookId}.`,
+    });
+
+    const createdWorkflow = this.mapWorkflowExecutionForResponse(
+      created.toObject() as PersistedWorkflowExecution,
+    );
+    const normalizedAlert =
+      await this.normalizedAlertsService.findNormalizedAlertDataByIdOrThrow(
+        recommendation.normalizedAlertId,
+      );
+    await this.incidentsService.createOrUpdateFromWorkflow({
+      workflow: createdWorkflow,
+      normalizedAlert,
+      recommendation,
+      message: `Incident tracking opened from selected recommendation ${recommendationId}.`,
     });
 
     if (autoStart) {
@@ -279,6 +296,7 @@ export class WorkflowsService {
       level: ExecutionLogLevel.WARNING,
       message: 'Workflow execution was cancelled. No real security action was executed.',
     });
+    await this.syncIncidentAndReport(execution);
 
     return createSuccessResponse(
       'Workflow execution cancelled. No real security action was executed.',
@@ -400,6 +418,7 @@ export class WorkflowsService {
       level: ExecutionLogLevel.WARNING,
       message: `Analyst rejected step ${step.step} ${step.action}. Workflow execution was cancelled with no real external action.`,
     });
+    await this.syncIncidentAndReport(execution);
 
     return {
       approvalRequest: this.mapApprovalRequestForResponse(
@@ -463,6 +482,7 @@ export class WorkflowsService {
         execution.status = WorkflowExecutionStatus.CANCELLED;
         execution.finishedAt = execution.finishedAt ?? new Date();
         await execution.save();
+        await this.syncIncidentAndReport(execution);
         return execution;
       }
 
@@ -470,6 +490,7 @@ export class WorkflowsService {
         execution.status = WorkflowExecutionStatus.FAILED;
         execution.finishedAt = execution.finishedAt ?? new Date();
         await execution.save();
+        await this.syncIncidentAndReport(execution);
         return execution;
       }
 
@@ -498,6 +519,7 @@ export class WorkflowsService {
           level: ExecutionLogLevel.WARNING,
           message: `Workflow paused for analyst approval at step ${step.step} ${step.action}. This action remains mock-only and request-only.`,
         });
+        await this.syncIncidentAndReport(execution);
 
         return execution;
       }
@@ -540,8 +562,37 @@ export class WorkflowsService {
       level: ExecutionLogLevel.INFO,
       message: 'Workflow execution completed successfully. No real security action was executed.',
     });
+    await this.syncIncidentAndReport(execution);
 
     return execution;
+  }
+
+  private async syncIncidentAndReport(execution: WorkflowExecutionDocument) {
+    const workflow = this.mapWorkflowExecutionForResponse(
+      execution.toObject() as PersistedWorkflowExecution,
+    );
+    const [recommendation, normalizedAlert] = await Promise.all([
+      this.recommendationsService.findRecommendationDataByIdOrThrow(workflow.recommendationId),
+      this.normalizedAlertsService.findNormalizedAlertDataByIdOrThrow(workflow.normalizedAlertId),
+    ]);
+    const incident = await this.incidentsService.createOrUpdateFromWorkflow({
+      workflow,
+      normalizedAlert,
+      recommendation,
+    });
+
+    if (
+      workflow.status === WorkflowExecutionStatus.SUCCESS ||
+      workflow.status === WorkflowExecutionStatus.CANCELLED ||
+      workflow.status === WorkflowExecutionStatus.FAILED
+    ) {
+      await this.reportsService.generateFromWorkflow({
+        incident,
+        workflow,
+        normalizedAlert,
+        recommendation,
+      });
+    }
   }
 
   private mapPlaybookActionToWorkflowStep(action: Playbook['actions'][number], playbook: Playbook) {
@@ -622,6 +673,7 @@ export class WorkflowsService {
       level: ExecutionLogLevel.ERROR,
       message: reason,
     });
+    await this.syncIncidentAndReport(execution);
   }
 
   private async createExecutionLog(input: {

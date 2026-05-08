@@ -6,12 +6,12 @@ export default function RecommendationsPage() {
   return (
     <>
       <PageIntro
-        title="Recommendations"
-        role="Playbook Matching"
-        description="This area presents deterministic playbook recommendations ranked from normalized alerts and structured playbook metadata."
+        title="Khuyến nghị playbook"
+        role="Ghép cảnh báo với playbook"
+        description="Hiển thị khuyến nghị playbook Top-3 được xếp hạng từ cảnh báo chuẩn hóa và metadata playbook có cấu trúc."
       />
       <RecommendationsTable />
-      <FutureNote note="Recommendation scoring and explanation generation are deterministic in Phases 6A and 7A. Analyst approval and workflow execution remain later phases." />
+      <FutureNote note="Điểm khuyến nghị được tính theo logic xác định để dễ kiểm chứng trong demo và báo cáo." />
     </>
   );
 }

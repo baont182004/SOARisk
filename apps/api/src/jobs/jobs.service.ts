@@ -1,19 +1,24 @@
 import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import {
   GENERATE_EXPLANATION_JOB_NAME,
+  GENERATE_REPORT_JOB_NAME,
   QUEUE_NAMES,
   NORMALIZE_ALERT_JOB_NAME,
   RECOMMEND_PLAYBOOKS_JOB_NAME,
   START_WORKFLOW_JOB_NAME,
+  buildGenerateReportJobId,
   buildGenerateExplanationJobId,
   buildNormalizeAlertJobId,
   buildRecommendPlaybooksJobId,
   buildStartWorkflowJobId,
   type GenerateExplanationJobData,
   type GenerateExplanationQueuedResponse,
+  type GenerateReportJobData,
+  type GenerateReportQueuedResponse,
   type NormalizeAlertJobData,
   type NormalizeAlertJobResult,
   type NormalizeAlertJobStatusSnapshot,
+  type QueueJobStatusSnapshot,
   type NormalizeAlertQueuedResponse,
   type RecommendPlaybooksJobData,
   type RecommendPlaybooksQueuedResponse,
@@ -46,7 +51,7 @@ export class JobsService implements OnModuleDestroy {
   });
   private readonly recommendationQueue = new Queue<
     RecommendPlaybooksJobData,
-    { status: 'placeholder' },
+    { status: 'completed'; normalizedAlertId: string; recommendationId?: string },
     typeof RECOMMEND_PLAYBOOKS_JOB_NAME
   >(QUEUE_NAMES.RECOMMENDATION, {
     connection: {
@@ -56,7 +61,7 @@ export class JobsService implements OnModuleDestroy {
   });
   private readonly explanationQueue = new Queue<
     GenerateExplanationJobData,
-    { status: 'placeholder' },
+    { status: 'completed'; recommendationId: string; explanationId?: string },
     typeof GENERATE_EXPLANATION_JOB_NAME
   >(QUEUE_NAMES.EXPLANATION, {
     connection: {
@@ -66,9 +71,19 @@ export class JobsService implements OnModuleDestroy {
   });
   private readonly workflowExecutionQueue = new Queue<
     StartWorkflowJobData,
-    { status: 'placeholder' },
+    { status: 'completed'; executionId: string; workflowStatus?: string },
     typeof START_WORKFLOW_JOB_NAME
   >(QUEUE_NAMES.WORKFLOW_EXECUTION, {
+    connection: {
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    },
+  });
+  private readonly reportGenerationQueue = new Queue<
+    GenerateReportJobData,
+    unknown,
+    typeof GENERATE_REPORT_JOB_NAME
+  >(QUEUE_NAMES.REPORT_GENERATION, {
     connection: {
       host: process.env.REDIS_HOST ?? 'localhost',
       port: Number(process.env.REDIS_PORT ?? 6379),
@@ -95,19 +110,19 @@ export class JobsService implements OnModuleDestroy {
         },
         {
           name: QUEUE_NAMES.RECOMMENDATION,
-          purpose: 'Queued playbook recommendation generation placeholder.',
+          purpose: 'Queued playbook recommendation generation.',
         },
         {
           name: QUEUE_NAMES.EXPLANATION,
-          purpose: 'Queued recommendation explanation generation placeholder.',
+          purpose: 'Queued recommendation explanation generation.',
         },
         {
           name: QUEUE_NAMES.WORKFLOW_EXECUTION,
-          purpose: 'Queued workflow start placeholder for later async orchestration.',
+          purpose: 'Queued workflow start for asynchronous orchestration.',
         },
         {
           name: QUEUE_NAMES.REPORT_GENERATION,
-          purpose: 'Future report generation pipeline.',
+          purpose: 'Queued report generation for completed workflow executions.',
         },
       ],
       catalog: createMockJobCatalog(),
@@ -133,6 +148,8 @@ export class JobsService implements OnModuleDestroy {
         existingJob ??
         (await this.alertNormalizationQueue.add(NORMALIZE_ALERT_JOB_NAME, jobData, {
           jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
         }));
 
       console.log(
@@ -179,6 +196,8 @@ export class JobsService implements OnModuleDestroy {
         existingJob ??
         (await this.recommendationQueue.add(RECOMMEND_PLAYBOOKS_JOB_NAME, jobData, {
           jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
         }));
 
       console.log(
@@ -227,6 +246,8 @@ export class JobsService implements OnModuleDestroy {
         existingJob ??
         (await this.explanationQueue.add(GENERATE_EXPLANATION_JOB_NAME, jobData, {
           jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
         }));
 
       console.log(
@@ -270,6 +291,8 @@ export class JobsService implements OnModuleDestroy {
         existingJob ??
         (await this.workflowExecutionQueue.add(START_WORKFLOW_JOB_NAME, jobData, {
           jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
         }));
 
       console.log(
@@ -294,12 +317,63 @@ export class JobsService implements OnModuleDestroy {
     }
   }
 
+  async enqueueReportGeneration(executionId: string) {
+    try {
+      await this.workflowsService.findWorkflowExecutionDataByIdOrThrow(executionId);
+
+      const requestedAt = new Date().toISOString();
+      const jobId = buildGenerateReportJobId(executionId);
+      const jobData: GenerateReportJobData = {
+        executionId,
+        requestedAt,
+      };
+      const existingJob = await this.reportGenerationQueue.getJob(jobId);
+      const job =
+        existingJob ??
+        (await this.reportGenerationQueue.add(GENERATE_REPORT_JOB_NAME, jobData, {
+          jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
+        }));
+
+      const response: GenerateReportQueuedResponse = {
+        jobId: String(job.id),
+        queueName: QUEUE_NAMES.REPORT_GENERATION,
+        jobName: job.name,
+        executionId,
+        status: 'queued',
+      };
+
+      return createSuccessResponse('Report generation job queued successfully.', response);
+    } catch (error) {
+      console.error(
+        `[jobs] failed to queue report generation job for executionId=${executionId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   async findAlertNormalizationJob(jobId: string) {
     const job = await this.getAlertNormalizationJobOrThrow(jobId);
 
     return createSuccessResponse(
       'Alert normalization job status retrieved.',
       await this.mapJobStatus(job),
+    );
+  }
+
+  async findQueueJob(queueName: string, jobId: string) {
+    const queue = this.getQueueByName(queueName);
+    const job = await queue.getJob(jobId);
+
+    if (!job) {
+      throw new NotFoundException(`Job '${jobId}' was not found in queue '${queueName}'.`);
+    }
+
+    return createSuccessResponse(
+      'Queue job status retrieved.',
+      await this.mapGenericJobStatus(queueName, job),
     );
   }
 
@@ -318,7 +392,25 @@ export class JobsService implements OnModuleDestroy {
       this.recommendationQueue.close(),
       this.explanationQueue.close(),
       this.workflowExecutionQueue.close(),
+      this.reportGenerationQueue.close(),
     ]);
+  }
+
+  private getQueueByName(queueName: string) {
+    const queues = {
+      [QUEUE_NAMES.ALERT_NORMALIZATION]: this.alertNormalizationQueue,
+      [QUEUE_NAMES.RECOMMENDATION]: this.recommendationQueue,
+      [QUEUE_NAMES.EXPLANATION]: this.explanationQueue,
+      [QUEUE_NAMES.WORKFLOW_EXECUTION]: this.workflowExecutionQueue,
+      [QUEUE_NAMES.REPORT_GENERATION]: this.reportGenerationQueue,
+    };
+    const queue = queues[queueName as keyof typeof queues];
+
+    if (!queue) {
+      throw new NotFoundException(`Queue '${queueName}' is not registered.`);
+    }
+
+    return queue;
   }
 
   private async getAlertNormalizationJobOrThrow(jobId: string) {
@@ -343,6 +435,26 @@ export class JobsService implements OnModuleDestroy {
       data: job.data,
       returnvalue: job.returnvalue,
       failedReason: job.failedReason || undefined,
+      timestamp: job.timestamp,
+      processedOn: job.processedOn || undefined,
+      finishedOn: job.finishedOn || undefined,
+    };
+  }
+
+  private async mapGenericJobStatus(
+    queueName: string,
+    job: Job,
+  ): Promise<QueueJobStatusSnapshot> {
+    return {
+      jobId: String(job.id),
+      queueName,
+      name: job.name,
+      state: await job.getState(),
+      progress: job.progress,
+      data: job.data,
+      returnvalue: job.returnvalue,
+      failedReason: job.failedReason || undefined,
+      attemptsMade: job.attemptsMade,
       timestamp: job.timestamp,
       processedOn: job.processedOn || undefined,
       finishedOn: job.finishedOn || undefined,

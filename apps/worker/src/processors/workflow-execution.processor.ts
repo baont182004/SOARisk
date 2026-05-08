@@ -5,23 +5,35 @@ import {
 } from '@soc-soar/shared';
 import { Worker } from 'bullmq';
 
+import { postApi } from '../api-client';
 import { queueConnection } from '../queues';
 
 export function createWorkflowExecutionWorker() {
   return new Worker<
     StartWorkflowJobData,
-    { status: 'placeholder' },
+    { status: 'completed'; executionId: string; workflowStatus?: string },
     typeof START_WORKFLOW_JOB_NAME
   >(
     QUEUE_NAMES.WORKFLOW_EXECUTION,
     async (job) => {
-      console.log(
-        `[workflow-execution-queue] placeholder processing job ${job.id} for executionId=${job.data.executionId ?? 'unknown'}`,
-      );
+      const { executionId } = job.data;
+
+      if (!executionId) {
+        throw new Error('start-workflow job requires executionId.');
+      }
+
+      await job.updateProgress({ status: 'processing', executionId });
+
+      const response = await postApi(`/workflows/${executionId}/start`);
+
+      await job.updateProgress({ status: 'completed', executionId });
+
+      const workflowStatus = (response.data as { status?: string } | undefined)?.status;
+
       return {
-        status: 'placeholder',
-        message:
-          'Workflow execution remains mock-only until analyst approval and guarded actions are defined.',
+        status: 'completed',
+        executionId,
+        ...(workflowStatus ? { workflowStatus } : {}),
       };
     },
     { connection: queueConnection },

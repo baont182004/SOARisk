@@ -13,7 +13,7 @@ This project starts **after security alerts already exist**.
 - PCAP is reserved for later demo/test alert generation only.
 - The current implemented core flow is `RawAlert -> NormalizedAlert`.
 - Phase 2B adds real worker-backed normalization through BullMQ.
-- Later phases will add Playbook Recommendation, Explanation, Analyst Approval, Workflow Execution, Incident Tracking, and Report Generation.
+- The MVP flow now includes Top-3 playbook recommendation, explanation, analyst approval, simulated workflow execution, incident tracking, report generation, dashboard, and evaluation.
 
 ## Scope Guardrails
 
@@ -116,6 +116,25 @@ corepack pnpm build
 docker compose config
 ```
 
+## Demo-ready Additions
+
+See `docs/demo-guide.md` for the current end-to-end demo flow, worker queue demo, evaluation metrics, report export, and smoke test.
+
+See `docs/defense-notes.md` for thesis defense notes covering SOAR scope, SIEM/IDS distinction, PCAP scope, recommendation logic, explanation, approval, evaluation metrics, limitations, and future work.
+
+Key URLs:
+
+- One-click demo wizard: `http://localhost:3000/demo`
+- Evaluation metrics: `http://localhost:3000/evaluation`
+- Dashboard summary API: `http://localhost:3001/dashboard/summary`
+- Evaluation summary API: `http://localhost:3001/evaluation/summary`
+
+Smoke test:
+
+```powershell
+corepack pnpm smoke:test
+```
+
 Useful test commands:
 
 ```powershell
@@ -214,15 +233,21 @@ Purpose:
 Seed playbooks:
 
 - `PB-001` Generic Alert Triage
-- `PB-002` Port Scan Investigation
-- `PB-003` ICMP Flood / DoS Response
-- `PB-004` Web SQL Injection Response
-- `PB-005` Web XSS Response
-- `PB-006` Suspicious DNS Investigation
-- `PB-007` Malware / C2 Traffic Investigation
-- `PB-008` Brute Force Login Investigation
-- `PB-009` Phishing Alert Triage
-- `PB-010` Data Exfiltration Investigation
+- `PB-002` Internal Lateral Movement Scan
+- `PB-003` Exposed Service Scan Validation
+- `PB-004` Vulnerability Scan Follow-up
+- `PB-005` Basic SQL Injection Triage
+- `PB-010` DGA-like DNS Query Investigation
+- `PB-027` Malware Beaconing With C2 Indicators
+- `PB-030` Data Exfiltration With C2 Context
+
+The active dataset is the 30-playbook structured v2 dataset from:
+
+```text
+SOARisk_Enhancement_Docs_Pack/playbooks.v2.seed.json
+```
+
+The old PB-001 to PB-010 demo-only seed array is no longer active. The seed script loads the enhancement pack at runtime and preserves structured fields such as alert types, severity affinity, required fields, MITRE ATT&CK mappings, asset criticality affinity, automation suitability, approval risk, workflow steps, scoring hints, expected outputs, and quality controls.
 
 Validation and summary:
 
@@ -274,14 +299,34 @@ Purpose:
 
 - Score active playbooks deterministically against one normalized alert, rank the top candidates, store the recommendation result, and expose the score breakdown for analyst review.
 
-Scoring components:
+Official scoring model:
 
-- Alert type match: 35 points
-- Required fields completeness: 20 points
-- Severity match: 15 points
-- Asset context match: 10 points
-- Condition match: 15 points
-- Automation suitability: 5 points
+- Source: `SOARisk_Enhancement_Docs_Pack/scoring_model.v1.json`
+- Model ID: `SOARISK-RS-V2`
+- Formula: `score = 100 * sum(weight_i * component_i) - 100 * sum(penalty_j)`, clamped to `[0,100]`
+
+Weighted criteria:
+
+- alert type match
+- MITRE technique/tactic match
+- severity match
+- required field coverage
+- asset criticality match
+- indicator context from playbook scoring hints
+- alert confidence
+- source reliability
+- automation suitability
+- neutral historical performance placeholder
+
+Penalties:
+
+- missing critical field
+- unsafe automation risk
+- high or critical approval risk with weak evidence
+- known benign signal
+- conflicting MITRE context
+
+Each Top-3 recommendation returns the playbook ID/name, final score, rank, matched criteria, missing criteria, score breakdown, approval risk, automation suitability, MITRE mapping, and a human-readable explanation.
 
 Endpoints:
 
@@ -350,6 +395,31 @@ curl.exe -X POST "http://localhost:3001/recommendations/<recommendationId>/selec
 PowerShell note:
 
 - Use `curl.exe` instead of `curl`.
+
+## Evaluation Dataset and Baseline Comparison
+
+The evaluation module now uses the official enhancement dataset:
+
+```text
+SOARisk_Enhancement_Docs_Pack/evaluation_cases.v1.json
+```
+
+It compares two recommendation strategies:
+
+- Baseline: ranks mainly by alert type match.
+- Proposed: ranks with the SOARISK-RS-V2 weighted scoring model.
+
+Returned metrics include Top-1 accuracy, Top-3 accuracy, mean reciprocal rank, mismatch cases, mismatch summary by alert type, confusion pairs, average score for correct vs incorrect Top-1 predictions, workflow success rate, average workflow execution time, manual step reduction, incidents by status, alerts by type/severity, and playbook usage count.
+
+```powershell
+curl.exe "http://localhost:3001/evaluation/summary"
+```
+
+The frontend view is available at:
+
+```text
+http://localhost:3000/evaluation
+```
 
 ## Phase 7A: Recommendation Explanation Engine
 

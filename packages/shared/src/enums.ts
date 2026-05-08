@@ -6,6 +6,7 @@ export enum AlertType {
   WEB_XSS = 'web_xss',
   SUSPICIOUS_DNS_QUERY = 'suspicious_dns_query',
   MALWARE_TRAFFIC = 'malware_traffic',
+  MALWARE = 'malware',
   BOTNET_C2 = 'botnet_c2',
   BRUTE_FORCE = 'brute_force',
   PHISHING = 'phishing',
@@ -52,9 +53,12 @@ export enum AutomationLevel {
 
 export enum IncidentCategory {
   GENERIC = 'generic',
+  PORT_SCAN = 'port_scan',
   RECONNAISSANCE = 'reconnaissance',
   DENIAL_OF_SERVICE = 'denial_of_service',
+  WEB_SQL_INJECTION = 'web_sql_injection',
   WEB_ATTACK = 'web_attack',
+  SUSPICIOUS_DNS_QUERY = 'suspicious_dns_query',
   SUSPICIOUS_DNS = 'suspicious_dns',
   MALWARE = 'malware',
   BRUTE_FORCE = 'brute_force',

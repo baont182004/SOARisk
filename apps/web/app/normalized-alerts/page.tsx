@@ -6,12 +6,12 @@ export default function NormalizedAlertsPage() {
   return (
     <>
       <PageIntro
-        title="Normalized Alerts"
-        role="SOAR-Ready Alert Dataset"
-        description="This page lists the unified alert records produced by deterministic normalization. These outputs can now generate deterministic playbook recommendations and score breakdowns."
+        title="Cảnh báo chuẩn hóa"
+        role="Dữ liệu sẵn sàng cho SOAR"
+        description="Danh sách bản ghi cảnh báo thống nhất sau chuẩn hóa. Dữ liệu này được dùng để gợi ý Top-3 playbook và tạo giải thích điểm số."
       />
       <NormalizedAlertsTable />
-      <FutureNote note="Recommendation scoring is now deterministic in Phase 6A. Workflow execution and analyst approval remain later phases." />
+      <FutureNote note="Chuẩn hóa giúp các nguồn cảnh báo khác nhau đi vào cùng một pipeline khuyến nghị, workflow và báo cáo." />
     </>
   );
 }

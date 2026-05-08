@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { fetchApi, fetchOptionalApi } from '../lib/api';
 import { DetailCard } from './detail-card';
 import { EmptyState } from './empty-state';
+import { formatStatusVi } from './status-badge';
 
 type RecommendationDetailProps = {
   recommendationId: string;
@@ -62,7 +63,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load recommendation.');
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được khuyến nghị.');
       } finally {
         if (active) {
           setLoading(false);
@@ -96,7 +97,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
       setError(
         generationError instanceof Error
           ? generationError.message
-          : 'Failed to generate explanation.',
+          : 'Không thể tạo giải thích.',
       );
     } finally {
       setGeneratingExplanation(false);
@@ -120,7 +121,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
       setMessage(response.message);
     } catch (workflowError) {
       setError(
-        workflowError instanceof Error ? workflowError.message : 'Failed to create workflow.',
+        workflowError instanceof Error ? workflowError.message : 'Không thể tạo workflow.',
       );
     } finally {
       setCreatingWorkflow(false);
@@ -143,7 +144,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
       setRecommendation(response.data);
       setMessage(response.message);
     } catch (selectError) {
-      setError(selectError instanceof Error ? selectError.message : 'Failed to select playbook.');
+      setError(selectError instanceof Error ? selectError.message : 'Không thể chọn playbook.');
     } finally {
       setSelectingPlaybookId(null);
     }
@@ -152,7 +153,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
   if (loading) {
     return (
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading recommendation detail...</p>
+        <p className="text-sm text-slate-600">Đang tải chi tiết khuyến nghị...</p>
       </section>
     );
   }
@@ -166,26 +167,26 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
   }
 
   if (!recommendation) {
-    return <EmptyState message="Recommendation not found." />;
+    return <EmptyState message="Không tìm thấy khuyến nghị." />;
   }
 
   return (
     <div className="space-y-6">
       <DetailCard
-        title="Recommendation Summary"
+        title="Tóm tắt khuyến nghị"
         items={[
           { label: 'Recommendation ID', value: recommendation.recommendationId },
-          { label: 'Normalized Alert ID', value: recommendation.normalizedAlertId },
+          { label: 'Alert chuẩn hóa', value: recommendation.normalizedAlertId },
           { label: 'Raw Alert ID', value: recommendation.alertId },
-          { label: 'Alert Type', value: recommendation.alertType },
-          { label: 'Severity', value: recommendation.severity },
-          { label: 'Status', value: recommendation.status },
+          { label: 'Loại alert', value: recommendation.alertType },
+          { label: 'Mức độ', value: recommendation.severity },
+          { label: 'Trạng thái', value: formatStatusVi(recommendation.status) },
           {
-            label: 'Selected Playbook',
-            value: recommendation.selectedPlaybookId ?? 'not selected',
+            label: 'Playbook đã chọn',
+            value: recommendation.selectedPlaybookId ?? 'chưa chọn',
           },
           {
-            label: 'Evaluated Playbooks',
+            label: 'Playbook đã đánh giá',
             value: String(recommendation.evaluatedPlaybookCount),
           },
         ]}
@@ -197,7 +198,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
             <div>
               <h3 className="text-lg font-semibold">Workflow</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Create a mock-only workflow execution from the selected recommendation and playbook.
+                Tạo workflow mô phỏng từ khuyến nghị và playbook đã chọn.
               </p>
             </div>
             <button
@@ -206,16 +207,14 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
               onClick={handleCreateWorkflow}
               type="button"
             >
-              {creatingWorkflow ? 'Creating...' : 'Create Workflow'}
+              {creatingWorkflow ? 'Đang tạo...' : 'Tạo workflow'}
             </button>
           </div>
           {workflow ? (
             <div className="mt-4 rounded-2xl bg-[var(--panel-muted)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Workflow ID
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Workflow ID</p>
                   <p className="mt-2 text-sm font-medium text-slate-800">
                     {workflow.executionId}
                   </p>
@@ -224,16 +223,16 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
                   className="rounded-xl border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-800"
                   href={`/workflows/${workflow.executionId}`}
                 >
-                  View Workflow
+                  Xem workflow
                 </Link>
               </div>
               <p className="mt-3 text-sm text-slate-700">
-                Status: {workflow.status}. Current step: {workflow.currentStep}.
+                Trạng thái: {formatStatusVi(workflow.status)}. Bước hiện tại: {workflow.currentStep}.
               </p>
             </div>
           ) : (
             <p className="mt-4 text-sm text-slate-600">
-              No workflow has been created for this recommendation yet.
+              Chưa có workflow cho khuyến nghị này.
             </p>
           )}
         </section>
@@ -242,9 +241,9 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold">Explanation</h3>
+            <h3 className="text-lg font-semibold">Giải thích</h3>
             <p className="mt-2 text-sm text-slate-600">
-              Generate an analyst-readable explanation snapshot for this recommendation.
+              Tạo bản giải thích dễ đọc cho analyst từ khuyến nghị này.
             </p>
           </div>
           <button
@@ -254,10 +253,10 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
             type="button"
           >
             {generatingExplanation
-              ? 'Generating...'
+              ? 'Đang tạo...'
               : explanation
-                ? 'Generate Explanation'
-                : 'Generate Explanation'}
+                ? 'Tạo lại giải thích'
+                : 'Tạo giải thích'}
           </button>
         </div>
         {explanation ? (
@@ -275,14 +274,14 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
                 className="rounded-xl border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-800"
                 href={`/explanations/${explanation.explanationId}`}
               >
-                View Explanation
+                Xem giải thích
               </Link>
             </div>
             <p className="mt-3 text-sm text-slate-700">{explanation.summary}</p>
           </div>
         ) : (
           <p className="mt-4 text-sm text-slate-600">
-            No explanation has been generated for this recommendation yet.
+            Chưa có giải thích cho khuyến nghị này.
           </p>
         )}
       </section>
@@ -300,66 +299,152 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
       ) : null}
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Ranked Playbooks</h3>
+        <h3 className="text-lg font-semibold">Playbook đã xếp hạng</h3>
         <div className="mt-4 space-y-4">
           {recommendation.topPlaybooks.map((playbook) => (
             <div key={playbook.playbookId} className="rounded-2xl bg-[var(--panel-muted)] p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-800">
-                  Rank {playbook.rank}
+                  Hạng {playbook.rank}
                 </span>
                 <span className="font-semibold text-slate-800">
                   {playbook.playbookId} {playbook.name}
                 </span>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  Score {playbook.totalScore}
+                  Điểm {playbook.finalScore ?? playbook.totalScore}
                 </span>
+                {playbook.confidenceBand ? (
+                  <span className="rounded-full bg-cyan-950/40 px-3 py-1 text-xs font-semibold text-cyan-200">
+                    {playbook.confidenceBand === 'high'
+                      ? 'Tin cậy cao'
+                      : playbook.confidenceBand === 'medium'
+                        ? 'Tin cậy trung bình'
+                        : 'Tin cậy thấp'}
+                  </span>
+                ) : null}
+                {playbook.approvalRisk ? (
+                  <span className="rounded-full bg-amber-950/40 px-3 py-1 text-xs font-semibold text-amber-200">
+                    Rủi ro phê duyệt: {playbook.approvalRisk}
+                  </span>
+                ) : null}
+                {playbook.automationSuitability !== undefined ? (
+                  <span className="rounded-full bg-violet-950/40 px-3 py-1 text-xs font-semibold text-violet-200">
+                    Automation suitability: {Math.round(playbook.automationSuitability * 100)}%
+                  </span>
+                ) : null}
+                {playbook.mitreTechniques?.slice(0, 3).map((technique) => (
+                  <span
+                    className="rounded-full bg-[var(--panel)] px-3 py-1 text-xs font-semibold text-[var(--text-muted)]"
+                    key={technique.id}
+                  >
+                    {technique.id}
+                  </span>
+                ))}
+              </div>
+              {playbook.explanation ? (
+                <p className="mt-3 rounded-2xl bg-[var(--panel)] p-4 text-sm text-[var(--text-muted)]">
+                  {playbook.explanation}
+                </p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(playbook.matchedCriteria ?? []).map((criterion) => (
+                  <span
+                    className="rounded-full bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-200"
+                    key={criterion}
+                  >
+                    Khớp: {criterion}
+                  </span>
+                ))}
+                {(playbook.missingCriteria ?? []).slice(0, 4).map((criterion) => (
+                  <span
+                    className="rounded-full bg-rose-950/40 px-3 py-1 text-xs font-semibold text-rose-200"
+                    key={criterion}
+                  >
+                    Thiếu/yếu: {criterion}
+                  </span>
+                ))}
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-3">
-                <MetricCard label="Incident Category" value={playbook.incidentCategory} />
-                <MetricCard label="Automation" value={playbook.automationLevel} />
+                <MetricCard label="Nhóm incident" value={playbook.incidentCategory} />
+                <MetricCard label="Tự động hóa" value={playbook.automationLevel} />
                 <MetricCard
-                  label="Approval Required"
-                  value={playbook.approvalRequired ? 'yes' : 'no'}
+                  label="Cần phê duyệt"
+                  value={playbook.approvalRequired ? 'Có' : 'Không'}
                 />
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <TextList title="Matched Reasons" items={playbook.matchedReasons} />
-                <TextList title="Missing Fields" items={playbook.missingFields} emptyText="None." />
+                <TextList title="Lý do khớp" items={playbook.matchedReasons} />
+                <TextList title="Trường còn thiếu" items={playbook.missingFields} emptyText="Không có." />
               </div>
               <div className="mt-4 rounded-2xl bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Score Breakdown
+                  Phân rã điểm
                 </p>
                 <div className="mt-3 grid gap-3 md:grid-cols-3">
                   <MetricCard
-                    label="Alert Type"
+                    label="Loại alert"
                     value={String(playbook.scoreBreakdown.alertTypeScore)}
                   />
                   <MetricCard
-                    label="Required Fields"
+                    label="Trường bắt buộc"
                     value={String(playbook.scoreBreakdown.requiredFieldsScore)}
                   />
                   <MetricCard
-                    label="Severity"
+                    label="Mức độ"
                     value={String(playbook.scoreBreakdown.severityScore)}
                   />
                   <MetricCard
-                    label="Asset Context"
+                    label="Ngữ cảnh tài sản"
                     value={String(playbook.scoreBreakdown.assetContextScore)}
                   />
                   <MetricCard
-                    label="Conditions"
-                    value={String(playbook.scoreBreakdown.conditionScore)}
+                    label="Điều kiện"
+                    value={String(
+                      playbook.scoreBreakdown.indicatorContextScore ??
+                        playbook.scoreBreakdown.conditionScore ??
+                        0,
+                    )}
                   />
                   <MetricCard
-                    label="Automation"
+                    label="MITRE"
+                    value={String(playbook.scoreBreakdown.mitreTechniqueScore ?? 0)}
+                  />
+                  <MetricCard
+                    label="Nguồn tin"
+                    value={String(playbook.scoreBreakdown.sourceReliabilityScore ?? 0)}
+                  />
+                  <MetricCard
+                    label="Penalty"
+                    value={String(playbook.scoreBreakdown.penaltyScore ?? 0)}
+                  />
+                  <MetricCard
+                    label="Tự động hóa"
                     value={String(playbook.scoreBreakdown.automationScore)}
                   />
                 </div>
                 <p className="mt-3 text-sm font-semibold text-slate-800">
-                  Total Score: {playbook.scoreBreakdown.totalScore}
+                  Tổng điểm: {playbook.scoreBreakdown.totalScore}
                 </p>
+                {playbook.criteriaBreakdown && playbook.criteriaBreakdown.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {playbook.criteriaBreakdown.map((criterion) => (
+                      <div
+                        className="rounded-xl border border-[var(--border)] bg-[var(--panel-muted)] p-3 text-sm"
+                        key={criterion.criterion}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-[var(--text-main)]">
+                            {criterion.criterion}
+                          </span>
+                          <span className="font-mono text-xs text-[var(--text-muted)]">
+                            +{criterion.weightedContribution}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[var(--text-muted)]">{criterion.evidence}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="mt-4">
                 <button
@@ -368,7 +453,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
                   onClick={() => handleSelectPlaybook(playbook.playbookId)}
                   type="button"
                 >
-                  {selectingPlaybookId === playbook.playbookId ? 'Selecting...' : 'Select Playbook'}
+                  {selectingPlaybookId === playbook.playbookId ? 'Đang chọn...' : 'Chọn playbook'}
                 </button>
               </div>
             </div>
@@ -391,7 +476,7 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 function TextList({
   title,
   items,
-  emptyText = 'None.',
+  emptyText = 'Không có.',
 }: {
   title: string;
   items: string[];

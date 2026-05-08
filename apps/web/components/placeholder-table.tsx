@@ -9,7 +9,7 @@ export function PlaceholderTable({ title, columns }: PlaceholderTableProps) {
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold">{title}</h3>
         <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          Placeholder
+          Dữ liệu demo
         </span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
@@ -29,7 +29,7 @@ export function PlaceholderTable({ title, columns }: PlaceholderTableProps) {
           </div>
         </div>
         <div className="px-4 py-10 text-sm text-slate-500">
-          No records are rendered yet. This table will bind to API data in later phases.
+          Chưa có bản ghi. Bảng này sẽ hiển thị dữ liệu khi API có dữ liệu phù hợp.
         </div>
       </div>
     </section>

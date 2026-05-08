@@ -5,8 +5,11 @@ import {
   IncidentCategory,
   RecommendationStatus,
   Severity,
+  type ApprovalRisk,
+  type MitreTechnique,
+  type RecommendationCriterionBreakdown,
 } from '@soc-soar/shared';
-import type { HydratedDocument } from 'mongoose';
+import { SchemaTypes, type HydratedDocument } from 'mongoose';
 
 export type RecommendationDocument = HydratedDocument<Recommendation>;
 
@@ -14,6 +17,9 @@ export type RecommendationDocument = HydratedDocument<Recommendation>;
 class RecommendationScoreBreakdownEntry {
   @Prop({ required: true })
   alertTypeScore!: number;
+
+  @Prop()
+  mitreTechniqueScore?: number;
 
   @Prop({ required: true })
   requiredFieldsScore!: number;
@@ -24,11 +30,26 @@ class RecommendationScoreBreakdownEntry {
   @Prop({ required: true })
   assetContextScore!: number;
 
-  @Prop({ required: true })
-  conditionScore!: number;
+  @Prop()
+  conditionScore?: number;
+
+  @Prop()
+  indicatorContextScore?: number;
+
+  @Prop()
+  alertConfidenceScore?: number;
+
+  @Prop()
+  sourceReliabilityScore?: number;
 
   @Prop({ required: true })
   automationScore!: number;
+
+  @Prop()
+  historicalPerformanceScore?: number;
+
+  @Prop()
+  penaltyScore?: number;
 
   @Prop({ required: true })
   totalScore!: number;
@@ -55,11 +76,29 @@ class TopPlaybookEntry {
   @Prop({ required: true })
   totalScore!: number;
 
+  @Prop()
+  finalScore?: number;
+
+  @Prop({ enum: ['high', 'medium', 'low'] })
+  confidenceBand?: 'high' | 'medium' | 'low';
+
   @Prop({ type: [String], default: [] })
   matchedReasons!: string[];
 
   @Prop({ type: [String], default: [] })
   missingFields!: string[];
+
+  @Prop({ type: [String], default: [] })
+  matchedCriteria!: string[];
+
+  @Prop({ type: [String], default: [] })
+  missingCriteria!: string[];
+
+  @Prop()
+  explanation?: string;
+
+  @Prop({ type: [SchemaTypes.Mixed], default: [] })
+  criteriaBreakdown!: RecommendationCriterionBreakdown[];
 
   @Prop({ type: RecommendationScoreBreakdownEntrySchema, required: true })
   scoreBreakdown!: RecommendationScoreBreakdownEntry;
@@ -69,6 +108,15 @@ class TopPlaybookEntry {
 
   @Prop({ required: true, enum: Object.values(AutomationLevel) })
   automationLevel!: AutomationLevel;
+
+  @Prop({ enum: ['low', 'medium', 'high', 'critical'] })
+  approvalRisk?: ApprovalRisk;
+
+  @Prop()
+  automationSuitability?: number;
+
+  @Prop({ type: [SchemaTypes.Mixed], default: [] })
+  mitreTechniques!: MitreTechnique[];
 }
 
 const TopPlaybookEntrySchema = SchemaFactory.createForClass(TopPlaybookEntry);
