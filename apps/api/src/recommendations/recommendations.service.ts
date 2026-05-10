@@ -84,7 +84,7 @@ export class RecommendationsService {
 
   async findAll(query: QueryRecommendationsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.normalizedAlertId ? { normalizedAlertId: query.normalizedAlertId } : {}),
       ...(query.alertType ? { alertType: query.alertType } : {}),

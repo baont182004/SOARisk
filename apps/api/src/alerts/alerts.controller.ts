@@ -19,6 +19,11 @@ export class AlertsController {
     return this.alertsService.findAll(query);
   }
 
+  @Get('raw')
+  findRaw(@Query() query: QueryRawAlertsDto) {
+    return this.alertsService.findAll(query);
+  }
+
   @Get(':alertId')
   findOne(@Param('alertId') alertId: string) {
     return this.alertsService.findOne(alertId);

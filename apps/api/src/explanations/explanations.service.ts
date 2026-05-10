@@ -100,7 +100,7 @@ export class ExplanationsService {
 
   async findAll(query: QueryExplanationsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.recommendationId ? { recommendationId: query.recommendationId } : {}),
       ...(query.normalizedAlertId ? { normalizedAlertId: query.normalizedAlertId } : {}),

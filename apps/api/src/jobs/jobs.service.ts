@@ -102,7 +102,7 @@ export class JobsService implements OnModuleDestroy {
       queues: [
         {
           name: QUEUE_NAMES.PCAP_DEMO,
-          purpose: 'Demo PCAP intake for sample alert generation.',
+          purpose: 'PCAP intake for controlled alert generation.',
         },
         {
           name: QUEUE_NAMES.ALERT_NORMALIZATION,

@@ -9,7 +9,7 @@ export function PlaceholderTable({ title, columns }: PlaceholderTableProps) {
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold">{title}</h3>
         <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          Dữ liệu demo
+          Operational data
         </span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-[var(--border)]">

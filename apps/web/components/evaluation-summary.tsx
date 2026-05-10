@@ -176,7 +176,7 @@ export function EvaluationSummaryPanel() {
       </section>
 
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-5 shadow-sm">
-        <h3 className="text-lg font-semibold">Dataset ground-truth demo</h3>
+        <h3 className="text-lg font-semibold">Ground-truth evaluation set</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full border-collapse text-left text-sm">
             <thead>

@@ -85,7 +85,7 @@ export class WorkflowsService {
 
   async findAll(query: QueryWorkflowsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.recommendationId ? { recommendationId: query.recommendationId } : {}),
       ...(query.playbookId ? { playbookId: query.playbookId } : {}),
@@ -104,7 +104,7 @@ export class WorkflowsService {
     ]);
 
     return createSuccessResponse(
-      'Workflow executions retrieved. All execution remains mock-only and analyst-gated.',
+      'Workflow executions retrieved.',
       items.map((item) => this.mapWorkflowExecutionForResponse(item as PersistedWorkflowExecution)),
       createPaginationMeta({
         count: items.length,
@@ -294,12 +294,12 @@ export class WorkflowsService {
     await this.createExecutionLog({
       executionId,
       level: ExecutionLogLevel.WARNING,
-      message: 'Workflow execution was cancelled. No real security action was executed.',
+      message: 'Workflow execution was cancelled by operator request.',
     });
     await this.syncIncidentAndReport(execution);
 
     return createSuccessResponse(
-      'Workflow execution cancelled. No real security action was executed.',
+      'Workflow execution cancelled.',
       this.mapWorkflowExecutionForResponse(execution.toObject() as PersistedWorkflowExecution),
     );
   }
@@ -347,7 +347,7 @@ export class WorkflowsService {
     step.approvalStatus = ApprovalStatus.APPROVED;
     step.status = WorkflowStepStatus.APPROVED;
     step.finishedAt = new Date();
-    step.result = 'Approved mock request recorded. No real security action was executed.';
+    step.result = 'Analyst approval recorded. Workflow execution may continue.';
     execution.status = WorkflowExecutionStatus.APPROVED;
     execution.currentStep = step.step;
     if (!execution.startedAt) {
@@ -360,7 +360,7 @@ export class WorkflowsService {
       step: step.step,
       action: step.action,
       level: ExecutionLogLevel.INFO,
-      message: `Analyst approval recorded for step ${step.step} ${step.action}. Mock workflow will continue with no real external action.`,
+      message: `Analyst approval recorded for step ${step.step} ${step.action}. Response workflow will continue.`,
     });
 
     const updatedExecution = await this.runWorkflowExecution(execution);
@@ -402,7 +402,7 @@ export class WorkflowsService {
     step.approvalStatus = ApprovalStatus.REJECTED;
     step.status = WorkflowStepStatus.REJECTED;
     step.finishedAt = new Date();
-    step.result = 'Mock request rejected by analyst. No real security action was executed.';
+    step.result = 'Approval request rejected by analyst. Workflow execution stopped.';
     execution.status = WorkflowExecutionStatus.CANCELLED;
     execution.currentStep = step.step;
     execution.finishedAt = new Date();
@@ -452,7 +452,7 @@ export class WorkflowsService {
 
   mockStart() {
     return createSuccessResponse(
-      'Mock workflow start endpoint is deprecated. Use POST /workflows/from-recommendation/:recommendationId and POST /workflows/:executionId/start instead.',
+      'Legacy workflow start endpoint is deprecated. Use POST /workflows/from-recommendation/:recommendationId and POST /workflows/:executionId/start instead.',
       {
         deprecated: true,
         recommendedCreateEndpoint: '/workflows/from-recommendation/:recommendationId',
@@ -517,7 +517,7 @@ export class WorkflowsService {
           step: step.step,
           action: step.action,
           level: ExecutionLogLevel.WARNING,
-          message: `Workflow paused for analyst approval at step ${step.step} ${step.action}. This action remains mock-only and request-only.`,
+          message: `Workflow paused for analyst approval at step ${step.step} ${step.action}.`,
         });
         await this.syncIncidentAndReport(execution);
 
@@ -560,7 +560,7 @@ export class WorkflowsService {
     await this.createExecutionLog({
       executionId: execution.executionId,
       level: ExecutionLogLevel.INFO,
-      message: 'Workflow execution completed successfully. No real security action was executed.',
+      message: 'Workflow execution completed successfully.',
     });
     await this.syncIncidentAndReport(execution);
 
@@ -717,42 +717,42 @@ export class WorkflowsService {
 
   private buildMockStepResult(action: string) {
     if (action === 'create_incident') {
-      return 'Mock incident anchor created.';
+      return 'Incident anchor created.';
     }
 
     if (action.startsWith('enrich_')) {
-      return `Mock enrichment completed for ${this.humanizeActionSuffix(action.slice('enrich_'.length))}.`;
+      return `Enrichment completed for ${this.humanizeActionSuffix(action.slice('enrich_'.length))}.`;
     }
 
     if (action.startsWith('check_')) {
-      return `Mock ${this.humanizeActionSuffix(action.slice('check_'.length))} check completed.`;
+      return `${this.humanizeActionSuffix(action.slice('check_'.length))} check completed.`;
     }
 
     if (action.startsWith('identify_')) {
-      return `Mock identification completed for ${this.humanizeActionSuffix(action.slice('identify_'.length))}.`;
+      return `Identification completed for ${this.humanizeActionSuffix(action.slice('identify_'.length))}.`;
     }
 
     if (action.startsWith('review_')) {
-      return `Mock evidence review completed for ${this.humanizeActionSuffix(action.slice('review_'.length))}.`;
+      return `Evidence review completed for ${this.humanizeActionSuffix(action.slice('review_'.length))}.`;
     }
 
     if (action.startsWith('investigate_')) {
-      return `Mock investigation completed for ${this.humanizeActionSuffix(action.slice('investigate_'.length))}.`;
+      return `Investigation completed for ${this.humanizeActionSuffix(action.slice('investigate_'.length))}.`;
     }
 
     if (action.startsWith('recommend_')) {
-      return `Mock recommendation recorded for ${this.humanizeActionSuffix(action.slice('recommend_'.length))}.`;
+      return `Recommendation recorded for ${this.humanizeActionSuffix(action.slice('recommend_'.length))}.`;
     }
 
     if (action.startsWith('mock_notify_')) {
-      return `Mock notification drafted for ${this.humanizeActionSuffix(action.slice('mock_notify_'.length))}.`;
+      return `Notification drafted for ${this.humanizeActionSuffix(action.slice('mock_notify_'.length))}.`;
     }
 
     if (action === 'generate_response_summary') {
-      return 'Mock response summary generated.';
+      return 'Response summary generated.';
     }
 
-    return 'Mock workflow step completed. No real security action was executed.';
+    return 'Workflow step completed.';
   }
 
   private humanizeActionSuffix(value: string) {

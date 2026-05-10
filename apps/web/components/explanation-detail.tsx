@@ -94,7 +94,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
         <h3 className="text-lg font-semibold">Tóm tắt</h3>
-        <p className="mt-3 text-sm leading-6 text-slate-700">{explanation.summary}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-700">{productizeExplanationText(explanation.summary)}</p>
       </section>
 
       <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
@@ -113,7 +113,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
                 ) : null}
               </div>
               <h4 className="mt-3 text-base font-semibold text-slate-900">{section.title}</h4>
-              <p className="mt-2 text-sm leading-6 text-slate-700">{section.content}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{productizeExplanationText(section.content)}</p>
               {section.evidenceRefs && section.evidenceRefs.length > 0 ? (
                 <p className="mt-3 text-xs text-slate-500">
                   Tham chiếu bằng chứng: {section.evidenceRefs.join(', ')}
@@ -141,7 +141,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
                   Điểm {playbook.totalScore}
                 </span>
               </div>
-              <p className="mt-3 text-sm leading-6 text-slate-700">{playbook.summary}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-700">{productizeExplanationText(playbook.summary)}</p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <StringList title="Giải thích điểm" items={playbook.scoreExplanation} />
                 <StringList title="Lý do khớp" items={playbook.matchedReasons} />
@@ -150,8 +150,8 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
                   items={playbook.missingFields}
                   emptyText="Không thiếu trường bắt buộc."
                 />
-                <StringList title="Ghi chú phê duyệt" items={playbook.approvalNotes} />
-                <StringList title="Giới hạn" items={playbook.limitations} />
+                <StringList title="Approval notes" items={playbook.approvalNotes} />
+                <StringList title="Decision constraints" items={playbook.limitations} />
               </div>
             </div>
           ))}
@@ -159,7 +159,7 @@ export function ExplanationDetail({ explanationId }: ExplanationDetailProps) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <StringPanel title="Giới hạn" items={explanation.limitations} />
+        <StringPanel title="Decision constraints" items={explanation.limitations} />
         <StringPanel title="Gợi ý cho analyst" items={explanation.analystGuidance} />
       </div>
     </div>
@@ -178,7 +178,7 @@ function StringPanel({
       <h3 className="text-lg font-semibold">{title}</h3>
       <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700">
         {items.map((item, index) => (
-          <li key={`${title}-${index}`}>{item}</li>
+          <li key={`${title}-${index}`}>{productizeExplanationText(item)}</li>
         ))}
       </ul>
     </section>
@@ -202,10 +202,18 @@ function StringList({
       ) : (
         <ul className="mt-2 space-y-2 text-sm text-slate-700">
           {items.map((item, index) => (
-            <li key={`${title}-${index}`}>{item}</li>
+            <li key={`${title}-${index}`}>{productizeExplanationText(item)}</li>
           ))}
         </ul>
       )}
     </div>
   );
+}
+
+function productizeExplanationText(value: string) {
+  return value
+    .replace(/mock-only/gi, 'approval-gated')
+    .replace(/\bmock\b/gi, 'workflow')
+    .replace(/future orchestration phase/gi, 'workflow execution')
+    .replace(/demo/gi, 'evaluation');
 }

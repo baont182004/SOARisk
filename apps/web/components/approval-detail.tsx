@@ -134,9 +134,9 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
         ]}
       />
 
-      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <p className="text-sm font-medium text-amber-950">
-          Phê duyệt chỉ cho workflow demo tiếp tục. Không có hành động bảo mật thật bên ngoài được thực thi.
+      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
+        <p className="text-sm font-medium text-slate-700">
+          Decision gate ghi nhận approver, lý do và trạng thái workflow để duy trì audit trail.
         </p>
       </section>
 
@@ -179,7 +179,7 @@ export function ApprovalDetail({ approvalId }: ApprovalDetailProps) {
             <input
               className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-slate-800"
               onChange={(event) => setDecisionReason(event.target.value)}
-              placeholder="Đã kiểm tra và cho phép workflow mô phỏng tiếp tục."
+              placeholder="Đã kiểm tra ngữ cảnh, rủi ro và tác động dự kiến."
               value={decisionReason}
             />
           </label>

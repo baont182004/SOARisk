@@ -13,7 +13,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: 'SOARisk - Nền tảng SOAR cho SOC',
-  description: 'Không gian demo đồ án tự động hóa SOC theo định hướng SOAR',
+  description: 'Nền tảng tự động hóa SOC theo định hướng SOAR',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -1,14 +1,22 @@
 'use client';
 
-import type { WorkflowExecution } from '@soc-soar/shared';
+import type { ApiCollectionMeta, WorkflowExecution } from '@soc-soar/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
+import { DataTable, type DataTableColumn } from './data-table';
 import { StatusBadge } from './status-badge';
+import { FilterBar, SelectFilter, TextFilter } from './table-filters';
 
 export function WorkflowsTable() {
   const [workflows, setWorkflows] = useState<WorkflowExecution[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [status, setStatus] = useState('');
+  const [recommendationId, setRecommendationId] = useState('');
+  const [playbookId, setPlaybookId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,26 +24,25 @@ export function WorkflowsTable() {
     let active = true;
 
     const loadWorkflows = async () => {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ limit: String(limit), page: String(page) });
+      if (status) params.set('status', status);
+      if (recommendationId) params.set('recommendationId', recommendationId);
+      if (playbookId) params.set('playbookId', playbookId);
+
       try {
-        const response = await fetchApi<WorkflowExecution[]>('/workflows?limit=20&page=1', {
+        const response = await fetchApi<WorkflowExecution[], ApiCollectionMeta>(`/workflows?${params}`, {
           cache: 'no-store',
         });
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setWorkflows(response.data);
+        setTotal(response.meta?.total ?? response.data.length);
       } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setError(loadError instanceof Error ? loadError.message : 'Không tải được workflow.');
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -44,78 +51,49 @@ export function WorkflowsTable() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [limit, page, playbookId, recommendationId, status]);
 
-  if (loading) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Đang tải workflow từ API...</p>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <p className="text-sm text-rose-800">{error}</p>
-      </section>
-    );
-  }
-
-  if (workflows.length === 0) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">
-          Chưa có workflow. Hãy chọn playbook từ một khuyến nghị và khởi chạy workflow.
-        </p>
-      </section>
-    );
-  }
+  const columns = useMemo<Array<DataTableColumn<WorkflowExecution>>>(
+    () => [
+      {
+        key: 'executionId',
+        header: 'Execution ID',
+        render: (workflow) => (
+          <Link className="font-mono text-xs text-teal-700 underline" href={`/workflows/${workflow.executionId}`}>
+            {workflow.executionId}
+          </Link>
+        ),
+      },
+      { key: 'recommendationId', header: 'Recommendation', render: (workflow) => <span className="font-mono text-xs">{workflow.recommendationId}</span> },
+      { key: 'playbookId', header: 'Playbook', render: (workflow) => workflow.playbookId },
+      { key: 'status', header: 'Status', render: (workflow) => <StatusBadge status={workflow.status} /> },
+      { key: 'currentStep', header: 'Current step', render: (workflow) => workflow.currentStep },
+      { key: 'createdAt', header: 'Created time', render: (workflow) => workflow.createdAt ? new Date(workflow.createdAt).toLocaleString() : 'Pending' },
+    ],
+    [],
+  );
 
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Workflow đã chạy</h3>
-        <StatusBadge status="live_api" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-slate-500">
-              <th className="px-3 py-3 font-semibold">Execution ID</th>
-              <th className="px-3 py-3 font-semibold">Recommendation ID</th>
-              <th className="px-3 py-3 font-semibold">Playbook ID</th>
-              <th className="px-3 py-3 font-semibold">Trạng thái</th>
-              <th className="px-3 py-3 font-semibold">Bước hiện tại</th>
-              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workflows.map((workflow) => (
-              <tr
-                key={workflow.executionId}
-                className="border-b border-[var(--border)] last:border-b-0"
-              >
-                <td className="px-3 py-3 font-mono text-xs">
-                  <Link
-                    className="text-teal-700 underline"
-                    href={`/workflows/${workflow.executionId}`}
-                  >
-                    {workflow.executionId}
-                  </Link>
-                </td>
-                <td className="px-3 py-3">{workflow.recommendationId}</td>
-                <td className="px-3 py-3">{workflow.playbookId}</td>
-                <td className="px-3 py-3"><StatusBadge status={workflow.status} /></td>
-                <td className="px-3 py-3">{workflow.currentStep}</td>
-                <td className="px-3 py-3">
-                  {workflow.createdAt ? new Date(workflow.createdAt).toLocaleString() : 'chưa có'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <DataTable
+      columns={columns}
+      data={workflows}
+      emptyMessage="No workflow executions match the current filters."
+      error={error}
+      filters={
+        <FilterBar>
+          <SelectFilter label="Status" onChange={(value) => { setPage(1); setStatus(value); }} options={[{ value: 'pending', label: 'pending' }, { value: 'running', label: 'running' }, { value: 'waiting_approval', label: 'waiting_approval' }, { value: 'success', label: 'success' }, { value: 'failed', label: 'failed' }, { value: 'cancelled', label: 'cancelled' }]} value={status} />
+          <TextFilter label="Recommendation ID" onChange={(value) => { setPage(1); setRecommendationId(value); }} placeholder="REC-..." value={recommendationId} />
+          <TextFilter label="Playbook ID" onChange={(value) => { setPage(1); setPlaybookId(value); }} placeholder="PB-..." value={playbookId} />
+        </FilterBar>
+      }
+      getRowKey={(workflow) => workflow.executionId}
+      limit={limit}
+      loading={loading}
+      onLimitChange={(nextLimit) => { setPage(1); setLimit(nextLimit); }}
+      onPageChange={setPage}
+      page={page}
+      title="Workflow Execution"
+      total={total}
+    />
   );
 }

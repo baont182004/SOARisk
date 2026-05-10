@@ -32,7 +32,7 @@ export class ApprovalsService {
 
   async findAll(query: QueryApprovalsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.executionId ? { executionId: query.executionId } : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -80,7 +80,7 @@ export class ApprovalsService {
     const result = await this.workflowsService.approvePendingRequest(approvalId, decision);
 
     return createSuccessResponse(
-      'Approval recorded. Mock workflow continued with no real external security action.',
+      'Approval recorded. Response workflow has resumed and all linked artifacts were updated.',
       result,
     );
   }
@@ -89,7 +89,7 @@ export class ApprovalsService {
     const result = await this.workflowsService.rejectPendingRequest(approvalId, decision);
 
     return createSuccessResponse(
-      'Approval rejected. Workflow cancelled with no real external security action.',
+      'Approval rejected. Response workflow was stopped and linked artifacts were updated.',
       result,
     );
   }

@@ -10,8 +10,9 @@ import {
 } from '@soc-soar/shared';
 import type { Model } from 'mongoose';
 
-import { createCollectionMeta, createSuccessResponse } from '../common/api-response.util';
+import { createPaginationMeta, createSuccessResponse } from '../common/api-response.util';
 import { createMockIncident } from '../common/mock-data';
+import { PaginationQueryDto } from '../common/pagination-query.dto';
 import { buildFlexibleIdQuery } from '../common/query.util';
 import { Incident } from './incident.schema';
 
@@ -32,13 +33,29 @@ export class IncidentsService {
     private readonly incidentModel: Model<Incident>,
   ) {}
 
-  async findAll() {
-    const items = await this.incidentModel.find().sort({ createdAt: -1 }).lean().exec();
+  async findAll(query: PaginationQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const [items, total] = await Promise.all([
+      this.incidentModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.incidentModel.countDocuments().exec(),
+    ]);
 
     return createSuccessResponse(
       'Incidents retrieved. These records track analyst-driven SOAR response activity.',
       items.map((item) => this.mapIncidentForResponse(item as PersistedIncident)),
-      createCollectionMeta(items.length),
+      createPaginationMeta({
+        count: items.length,
+        page,
+        limit,
+        total,
+      }),
     );
   }
 
@@ -62,7 +79,7 @@ export class IncidentsService {
     const created = await this.incidentModel.create(createMockIncident());
 
     return createSuccessResponse(
-      'Mock incident created for analyst workflow testing.',
+      'Incident created for analyst workflow testing.',
       this.mapIncidentForResponse(created.toObject() as PersistedIncident),
     );
   }
@@ -162,7 +179,7 @@ export class IncidentsService {
       case WorkflowExecutionStatus.WAITING_APPROVAL:
         return `Workflow ${executionId} is waiting for analyst approval.`;
       case WorkflowExecutionStatus.SUCCESS:
-        return `Workflow ${executionId} completed; incident marked resolved for demo reporting.`;
+        return `Workflow ${executionId} completed; incident marked resolved for operational reporting.`;
       case WorkflowExecutionStatus.CANCELLED:
         return `Workflow ${executionId} was cancelled; incident tracking closed.`;
       case WorkflowExecutionStatus.FAILED:

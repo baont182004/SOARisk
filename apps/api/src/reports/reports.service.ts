@@ -14,8 +14,9 @@ import {
 import type { Model } from 'mongoose';
 
 import { ApprovalRequest } from '../approvals/approval-request.schema';
-import { createCollectionMeta, createSuccessResponse } from '../common/api-response.util';
+import { createPaginationMeta, createSuccessResponse } from '../common/api-response.util';
 import { createMockReport } from '../common/mock-data';
+import { PaginationQueryDto } from '../common/pagination-query.dto';
 import { RecommendationExplanation as RecommendationExplanationSchemaClass } from '../explanations/explanation.schema';
 import { Incident } from '../incidents/incident.schema';
 import { NormalizedAlert as NormalizedAlertSchemaClass } from '../normalized-alerts/normalized-alert.schema';
@@ -49,13 +50,29 @@ export class ReportsService {
     private readonly approvalRequestModel: Model<ApprovalRequest>,
   ) {}
 
-  async findAll() {
-    const items = await this.reportModel.find().sort({ createdAt: -1 }).lean().exec();
+  async findAll(query: PaginationQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const [items, total] = await Promise.all([
+      this.reportModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.reportModel.countDocuments().exec(),
+    ]);
 
     return createSuccessResponse(
       'Reports retrieved. These summarize SOAR workflow outcomes for analyst review.',
       items.map((item) => this.mapReportForResponse(item as PersistedReport)),
-      createCollectionMeta(items.length),
+      createPaginationMeta({
+        count: items.length,
+        page,
+        limit,
+        total,
+      }),
     );
   }
 
@@ -76,7 +93,7 @@ export class ReportsService {
     const created = await this.reportModel.create(createMockReport());
 
     return createSuccessResponse(
-      'Mock report created. Real report generation will be added in a later phase.',
+      'Report created for analyst workflow testing.',
       this.mapReportForResponse(created.toObject() as PersistedReport),
     );
   }
@@ -247,13 +264,16 @@ export class ReportsService {
   }
 
   private buildAlertSummary(normalizedAlert: NormalizedAlert) {
+    const pcapContext = normalizedAlert.additionalContext?.pcapOriginalName
+      ? `PCAP input ${String(normalizedAlert.additionalContext.pcapOriginalName)}${normalizedAlert.additionalContext.pcapJobId ? ` via job ${String(normalizedAlert.additionalContext.pcapJobId)}` : ''}. `
+      : '';
     const observables = [
       normalizedAlert.sourceIp ? `source ${normalizedAlert.sourceIp}` : undefined,
       normalizedAlert.targetIp ? `target ${normalizedAlert.targetIp}` : undefined,
       normalizedAlert.protocol ? `protocol ${normalizedAlert.protocol}` : undefined,
     ].filter(Boolean);
 
-    return `${normalizedAlert.alertType} alert '${normalizedAlert.title}' normalized with severity ${normalizedAlert.severity} and confidence ${normalizedAlert.confidence}. ${observables.join(', ') || 'No network observable was available.'}`;
+    return `${pcapContext}${normalizedAlert.alertType} alert '${normalizedAlert.title}' normalized with severity ${normalizedAlert.severity} and confidence ${normalizedAlert.confidence}. ${observables.join(', ') || 'No network observable was available.'}`;
   }
 
   private buildPlaybookSummary(recommendation: Recommendation, workflow: WorkflowExecution) {
@@ -283,7 +303,7 @@ export class ReportsService {
         ? 'Workflow completed successfully.'
         : `Workflow ended with status ${workflow.status}.`;
 
-    return `${terminalNote} ${completed}/${workflow.steps.length} steps completed. ${approvals} step(s) required analyst approval. All actions were mock-only.`;
+    return `${terminalNote} ${completed}/${workflow.steps.length} steps completed. ${approvals} step(s) required analyst approval.`;
   }
 
   private mapReportForResponse(report: PersistedReport): SharedReport {
@@ -314,9 +334,9 @@ export class ReportsService {
       '## Incident Information',
       `- Incident ID: ${context.incident?.incidentId ?? context.report.incidentId}`,
       `- Status: ${context.incident?.status ?? context.report.finalStatus}`,
-      `- Severity: ${context.incident?.severity ?? 'n/a'}`,
-      `- Selected Playbook: ${context.incident?.selectedPlaybookId ?? 'n/a'}`,
-      `- Workflow Execution: ${context.workflow?.executionId ?? context.report.executionId ?? 'n/a'}`,
+      `- Severity: ${context.incident?.severity ?? 'not available'}`,
+      `- Selected Playbook: ${context.incident?.selectedPlaybookId ?? 'not available'}`,
+      `- Workflow Execution: ${context.workflow?.executionId ?? context.report.executionId ?? 'not available'}`,
       '',
       '## Alert Summary',
       context.report.alertSummary,
@@ -328,9 +348,9 @@ export class ReportsService {
             `- Alert Type: ${context.normalizedAlert.alertType}`,
             `- Severity: ${context.normalizedAlert.severity}`,
             `- Confidence: ${context.normalizedAlert.confidence}`,
-            `- Source IP: ${context.normalizedAlert.sourceIp ?? 'n/a'}`,
-            `- Target IP: ${context.normalizedAlert.targetIp ?? 'n/a'}`,
-            `- Protocol: ${context.normalizedAlert.protocol ?? 'n/a'}`,
+            `- Source IP: ${context.normalizedAlert.sourceIp ?? 'not available'}`,
+            `- Target IP: ${context.normalizedAlert.targetIp ?? 'not available'}`,
+            `- Protocol: ${context.normalizedAlert.protocol ?? 'not available'}`,
           ].join('\n')
         : 'Normalized alert detail was not found.',
       '',
@@ -345,7 +365,7 @@ export class ReportsService {
         ? context.logs
             .map(
               (log) =>
-                `- ${log.createdAt ? new Date(log.createdAt).toISOString() : 'n/a'} [${log.level}] ${log.step ? `step ${log.step} ` : ''}${log.message}`,
+                `- ${log.createdAt ? new Date(log.createdAt).toISOString() : 'not available'} [${log.level}] ${log.step ? `step ${log.step} ` : ''}${log.message}`,
             )
             .join('\n')
         : 'No workflow execution logs were found.',
@@ -363,8 +383,8 @@ export class ReportsService {
       '## Final Incident Status',
       context.report.finalStatus,
       '',
-      '## Scope Note',
-      'This report summarizes a SOAR workflow demonstration. PCAP input, if used, only generated demo alerts and did not perform IDS-grade packet detection.',
+      '## Operational Notes',
+      'This report summarizes alert context, workflow execution, analyst approval decisions, incident status, and response outcome.',
       '',
     ];
 

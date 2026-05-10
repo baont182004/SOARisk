@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AlertsModule } from './alerts/alerts.module';
+import { AnalystReviewModule } from './analyst-review/analyst-review.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { AssetsModule } from './assets/assets.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -41,6 +42,7 @@ import { WorkflowsModule } from './workflows/workflows.module';
     }),
     HealthModule,
     AlertsModule,
+    AnalystReviewModule,
     ApprovalsModule,
     NormalizedAlertsModule,
     PlaybooksModule,

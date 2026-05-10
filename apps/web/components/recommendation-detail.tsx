@@ -198,7 +198,7 @@ export function RecommendationDetail({ recommendationId }: RecommendationDetailP
             <div>
               <h3 className="text-lg font-semibold">Workflow</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Tạo workflow mô phỏng từ khuyến nghị và playbook đã chọn.
+                Tạo workflow phản hồi từ khuyến nghị và playbook đã chọn.
               </p>
             </div>
             <button

@@ -3,12 +3,15 @@ import {
   AutomationLevel,
   IncidentCategory,
   PlaybookStatus,
+  Severity,
 } from '@soc-soar/shared';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   Max,
   Min,
 } from 'class-validator';
@@ -31,11 +34,24 @@ export class QueryPlaybooksDto {
   automationLevel?: AutomationLevel;
 
   @IsOptional()
+  @IsEnum(Severity)
+  severitySupported?: Severity;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  approvalRequired?: boolean;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @Type(() => Number)

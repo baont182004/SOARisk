@@ -27,12 +27,26 @@ export class PlaybooksService {
 
   async findAll(query: QueryPlaybooksDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.incidentCategory ? { incidentCategory: query.incidentCategory } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.automationLevel ? { automationLevel: query.automationLevel } : {}),
       ...(query.alertType ? { supportedAlertTypes: query.alertType } : {}),
+      ...(query.severitySupported ? { severityRange: query.severitySupported } : {}),
+      ...(query.approvalRequired !== undefined
+        ? { approvalRequired: query.approvalRequired }
+        : {}),
+      ...(query.search
+        ? {
+            $or: [
+              { playbookId: { $regex: query.search, $options: 'i' } },
+              { name: { $regex: query.search, $options: 'i' } },
+              { incidentCategory: { $regex: query.search, $options: 'i' } },
+              { supportedAlertTypes: { $regex: query.search, $options: 'i' } },
+            ],
+          }
+        : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -47,7 +61,7 @@ export class PlaybooksService {
     ]);
 
     return createSuccessResponse(
-      'Playbooks retrieved. These are structured, mock-only response templates for later recommendation and orchestration phases.',
+      'Playbooks retrieved.',
       items.map((item) => this.mapPlaybookForResponse(item as PersistedPlaybook)),
       createPaginationMeta({
         count: items.length,

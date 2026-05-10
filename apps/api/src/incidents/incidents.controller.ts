@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 
+import { PaginationQueryDto } from '../common/pagination-query.dto';
 import { IncidentsService } from './incidents.service';
 
 @Controller('incidents')
@@ -7,8 +8,8 @@ export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Get()
-  findAll() {
-    return this.incidentsService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.incidentsService.findAll(query);
   }
 
   @Get(':id')

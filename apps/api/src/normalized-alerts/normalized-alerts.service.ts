@@ -37,11 +37,12 @@ export class NormalizedAlertsService {
 
   async findAll(query: QueryNormalizedAlertsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.alertType ? { alertType: query.alertType } : {}),
       ...(query.severity ? { severity: query.severity } : {}),
       ...(query.source ? { source: query.source } : {}),
+      ...(query.rawAlertId ? { alertId: query.rawAlertId } : {}),
       ...(query.normalizationStatus
         ? { normalizationStatus: query.normalizationStatus }
         : {}),

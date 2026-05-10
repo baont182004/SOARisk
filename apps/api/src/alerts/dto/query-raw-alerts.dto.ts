@@ -8,6 +8,7 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   Max,
   Min,
 } from 'class-validator';
@@ -26,11 +27,15 @@ export class QueryRawAlertsDto {
   severity?: Severity;
 
   @IsOptional()
+  @IsString()
+  pcapJobId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @Type(() => Number)

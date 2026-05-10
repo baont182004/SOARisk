@@ -1,14 +1,23 @@
 'use client';
 
-import type { Recommendation } from '@soc-soar/shared';
+import type { ApiCollectionMeta, Recommendation } from '@soc-soar/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
-import { StatusBadge } from './status-badge';
+import { DataTable, type DataTableColumn } from './data-table';
+import { SeverityBadge, StatusBadge } from './status-badge';
+import { FilterBar, SelectFilter, TextFilter, alertTypeOptions, severityOptions } from './table-filters';
 
 export function RecommendationsTable() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [alertType, setAlertType] = useState('');
+  const [severity, setSeverity] = useState('');
+  const [status, setStatus] = useState('');
+  const [normalizedAlertId, setNormalizedAlertId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,28 +25,27 @@ export function RecommendationsTable() {
     let active = true;
 
     const loadRecommendations = async () => {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ limit: String(limit), page: String(page) });
+      if (alertType) params.set('alertType', alertType);
+      if (severity) params.set('severity', severity);
+      if (status) params.set('status', status);
+      if (normalizedAlertId) params.set('normalizedAlertId', normalizedAlertId);
+
       try {
-        const response = await fetchApi<Recommendation[]>('/recommendations?limit=20&page=1', {
-          cache: 'no-store',
-        });
-
-        if (!active) {
-          return;
-        }
-
-        setRecommendations(response.data);
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error ? loadError.message : 'Không tải được danh sách khuyến nghị.',
+        const response = await fetchApi<Recommendation[], ApiCollectionMeta>(
+          `/recommendations?${params}`,
+          { cache: 'no-store' },
         );
+        if (!active) return;
+        setRecommendations(response.data);
+        setTotal(response.meta?.total ?? response.data.length);
+      } catch (loadError) {
+        if (!active) return;
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được danh sách khuyến nghị.');
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -46,90 +54,65 @@ export function RecommendationsTable() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [alertType, limit, normalizedAlertId, page, severity, status]);
 
-  if (loading) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Đang tải khuyến nghị từ API...</p>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <p className="text-sm text-rose-800">{error}</p>
-      </section>
-    );
-  }
-
-  if (recommendations.length === 0) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">
-          Chưa có khuyến nghị. Hãy tạo khuyến nghị từ một cảnh báo chuẩn hóa.
-        </p>
-      </section>
-    );
-  }
+  const columns = useMemo<Array<DataTableColumn<Recommendation>>>(
+    () => [
+      {
+        key: 'recommendationId',
+        header: 'Recommendation ID',
+        className: 'min-w-44',
+        render: (recommendation) => (
+          <Link className="font-mono text-xs text-teal-700 underline" href={`/recommendations/${recommendation.recommendationId}`}>
+            {recommendation.recommendationId}
+          </Link>
+        ),
+      },
+      { key: 'normalizedAlertId', header: 'Normalized Alert', render: (recommendation) => <span className="font-mono text-xs">{recommendation.normalizedAlertId}</span> },
+      { key: 'alertType', header: 'Alert type', render: (recommendation) => recommendation.alertType },
+      { key: 'severity', header: 'Severity', render: (recommendation) => <SeverityBadge severity={recommendation.severity} /> },
+      { key: 'topPlaybook', header: 'Top-1 Playbook', render: (recommendation) => recommendation.topPlaybooks[0]?.playbookId ?? 'Not generated' },
+      { key: 'score', header: 'Score', render: (recommendation) => {
+        const topPlaybook = recommendation.topPlaybooks[0];
+        return topPlaybook ? topPlaybook.finalScore ?? topPlaybook.totalScore : 'Pending';
+      } },
+      { key: 'status', header: 'Status', render: (recommendation) => <StatusBadge status={recommendation.status} /> },
+      { key: 'createdAt', header: 'Created time', render: (recommendation) => recommendation.createdAt ? new Date(recommendation.createdAt).toLocaleString() : 'Pending' },
+      {
+        key: 'action',
+        header: 'Action',
+        render: (recommendation) => (
+          <Link className="text-teal-700 underline" href={`/recommendations/${recommendation.recommendationId}`}>
+            View details
+          </Link>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Khuyến nghị playbook</h3>
-        <StatusBadge status="live_api" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-slate-500">
-              <th className="px-3 py-3 font-semibold">Recommendation ID</th>
-              <th className="px-3 py-3 font-semibold">Alert chuẩn hóa</th>
-              <th className="px-3 py-3 font-semibold">Loại alert</th>
-              <th className="px-3 py-3 font-semibold">Mức độ</th>
-              <th className="px-3 py-3 font-semibold">Playbook Top-1</th>
-              <th className="px-3 py-3 font-semibold">Điểm</th>
-              <th className="px-3 py-3 font-semibold">Trạng thái</th>
-              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recommendations.map((recommendation) => {
-              const topPlaybook = recommendation.topPlaybooks[0];
-
-              return (
-                <tr
-                  key={recommendation.recommendationId}
-                  className="border-b border-[var(--border)] last:border-b-0"
-                >
-                  <td className="px-3 py-3 font-mono text-xs">
-                    <Link
-                      className="text-teal-700 underline"
-                      href={`/recommendations/${recommendation.recommendationId}`}
-                    >
-                      {recommendation.recommendationId}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-3">{recommendation.normalizedAlertId}</td>
-                  <td className="px-3 py-3">{recommendation.alertType}</td>
-                  <td className="px-3 py-3">{recommendation.severity}</td>
-                  <td className="px-3 py-3">{topPlaybook?.playbookId ?? 'chưa có'}</td>
-                  <td className="px-3 py-3">
-                    {topPlaybook ? `${topPlaybook.finalScore ?? topPlaybook.totalScore}` : 'chưa có'}
-                  </td>
-                  <td className="px-3 py-3"><StatusBadge status={recommendation.status} /></td>
-                  <td className="px-3 py-3">
-                    {recommendation.createdAt
-                      ? new Date(recommendation.createdAt).toLocaleString()
-                      : 'chưa có'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <DataTable
+      columns={columns}
+      data={recommendations}
+      emptyMessage="No recommendations match the current filters."
+      error={error}
+      filters={
+        <FilterBar>
+          <SelectFilter label="Alert type" onChange={(value) => { setPage(1); setAlertType(value); }} options={alertTypeOptions} value={alertType} />
+          <SelectFilter label="Severity" onChange={(value) => { setPage(1); setSeverity(value); }} options={severityOptions} value={severity} />
+          <SelectFilter label="Status" onChange={(value) => { setPage(1); setStatus(value); }} options={[{ value: 'generated', label: 'generated' }, { value: 'selected', label: 'selected' }, { value: 'expired', label: 'expired' }]} value={status} />
+          <TextFilter label="Normalized ID" onChange={(value) => { setPage(1); setNormalizedAlertId(value); }} placeholder="NAL-..." value={normalizedAlertId} />
+        </FilterBar>
+      }
+      getRowKey={(recommendation) => recommendation.recommendationId}
+      limit={limit}
+      loading={loading}
+      onLimitChange={(nextLimit) => { setPage(1); setLimit(nextLimit); }}
+      onPageChange={setPage}
+      page={page}
+      title="Playbook Recommendation"
+      total={total}
+    />
   );
 }

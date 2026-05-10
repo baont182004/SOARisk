@@ -252,7 +252,7 @@ export function WorkflowDetail({ executionId }: WorkflowDetailProps) {
                 <MetricCard label="Loại bước" value={step.type} />
                 <MetricCard label="Phê duyệt" value={formatStatusVi(step.approvalStatus)} />
                 <MetricCard label="Rủi ro" value={step.risk} />
-                <MetricCard label="Demo action" value={step.mockOnly ? 'Có' : 'Không'} />
+                <MetricCard label="Approval-gated" value={step.mockOnly ? 'Có' : 'Không'} />
               </div>
               <p className="mt-4 text-sm text-slate-700">
                 Kết quả: {step.result ?? 'Bước này chưa có kết quả.'}

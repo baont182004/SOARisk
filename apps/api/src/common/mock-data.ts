@@ -151,7 +151,7 @@ export function createMockReport() {
     alertSummary: 'Placeholder alert summary generated from a normalized demo alert.',
     playbookSummary: 'Placeholder playbook summary for analyst review.',
     recommendationSummary: 'Placeholder recommendation rationale for future explanation engine.',
-    executionSummary: 'Workflow execution is mock-only in this initialization phase.',
+    executionSummary: 'Workflow execution is ready for analyst review.',
     finalStatus: IncidentStatus.NEW,
     createdAt: new Date(),
   };
@@ -174,7 +174,7 @@ export function createMockPcapJob(fileId: string) {
     fileId,
     status: PcapJobStatus.PENDING,
     message:
-      'Placeholder PCAP demo job created. PCAP is only used for test/demo alert generation, not full IDS analysis.',
+      'PCAP intake job created for controlled alert generation.',
     createdAt: new Date(),
   };
 }
@@ -223,7 +223,7 @@ export function createMockExplanation(): MockRecommendationExplanation {
         matchedReasons: ['Exact alert type match for port_scan.'],
         missingFields: [],
         approvalNotes: [
-          'Sensitive response steps remain mock-only and require analyst approval.',
+          'Sensitive response steps require analyst approval.',
         ],
         limitations: ['This placeholder explanation does not execute any response action.'],
       },

@@ -1,5 +1,6 @@
-import { BadRequestException, Controller, Get, Param, Post } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
+import { PaginationQueryDto } from '../common/pagination-query.dto';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
@@ -7,8 +8,8 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get()
-  findAll() {
-    return this.reportsService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.reportsService.findAll(query);
   }
 
   @Get(':reportId')

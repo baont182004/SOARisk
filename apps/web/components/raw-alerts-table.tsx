@@ -1,14 +1,23 @@
 'use client';
 
-import type { RawAlert } from '@soc-soar/shared';
+import type { ApiCollectionMeta, RawAlert } from '@soc-soar/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
-import { StatusBadge } from './status-badge';
+import { DataTable, type DataTableColumn } from './data-table';
+import { FilterBar, SelectFilter, TextFilter, alertTypeOptions, severityOptions } from './table-filters';
+import { SeverityBadge, formatSourceLabel } from './status-badge';
 
 export function RawAlertsTable() {
   const [alerts, setAlerts] = useState<RawAlert[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [alertType, setAlertType] = useState('');
+  const [severity, setSeverity] = useState('');
+  const [source, setSource] = useState('');
+  const [pcapJobId, setPcapJobId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,26 +25,30 @@ export function RawAlertsTable() {
     let active = true;
 
     const loadAlerts = async () => {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        limit: String(limit),
+        page: String(page),
+      });
+      if (alertType) params.set('alertType', alertType);
+      if (severity) params.set('severity', severity);
+      if (source) params.set('source', source);
+      if (pcapJobId) params.set('pcapJobId', pcapJobId);
+
       try {
-        const response = await fetchApi<RawAlert[]>('/alerts?limit=20&page=1', {
+        const response = await fetchApi<RawAlert[], ApiCollectionMeta>(`/alerts?${params}`, {
           cache: 'no-store',
         });
 
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setAlerts(response.data);
+        setTotal(response.meta?.total ?? response.data.length);
       } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setError(loadError instanceof Error ? loadError.message : 'Không tải được danh sách cảnh báo.');
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -44,74 +57,73 @@ export function RawAlertsTable() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [alertType, limit, page, pcapJobId, severity, source]);
 
-  if (loading) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Đang tải cảnh báo thô từ API...</p>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <p className="text-sm text-rose-800">{error}</p>
-      </section>
-    );
-  }
-
-  if (alerts.length === 0) {
-    return (
-      <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Chưa có cảnh báo thô. Hãy chạy Demo Wizard hoặc PCAP demo để tạo dữ liệu.</p>
-      </section>
-    );
-  }
+  const columns = useMemo<Array<DataTableColumn<RawAlert>>>(
+    () => [
+      {
+        key: 'alertId',
+        header: 'Alert ID',
+        className: 'min-w-44',
+        render: (alert) => <span className="font-mono text-xs">{alert.alertId}</span>,
+      },
+      { key: 'title', header: 'Title', className: 'min-w-64', render: (alert) => alert.title },
+      { key: 'source', header: 'Source', render: (alert) => formatSourceLabel(alert.source) },
+      { key: 'alertType', header: 'Alert type', render: (alert) => alert.alertType ?? 'Pending' },
+      { key: 'severity', header: 'Severity', render: (alert) => <SeverityBadge severity={alert.severity} /> },
+      {
+        key: 'confidence',
+        header: 'Confidence',
+        render: (alert) => (alert.confidence !== undefined ? `${alert.confidence}%` : 'Pending'),
+      },
+      { key: 'createdAt', header: 'Created time', render: (alert) => new Date(alert.createdAt).toLocaleString() },
+      {
+        key: 'action',
+        header: 'Action',
+        render: (alert) => (
+          <Link className="text-teal-700 underline" href={`/alerts/${alert.alertId}`}>
+            View details
+          </Link>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Luồng cảnh báo thô</h3>
-        <StatusBadge status="live_api" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-slate-500">
-              <th className="px-3 py-3 font-semibold">Alert ID</th>
-              <th className="px-3 py-3 font-semibold">Tiêu đề</th>
-              <th className="px-3 py-3 font-semibold">Nguồn</th>
-              <th className="px-3 py-3 font-semibold">Loại alert</th>
-              <th className="px-3 py-3 font-semibold">Mức độ</th>
-              <th className="px-3 py-3 font-semibold">Độ tin cậy</th>
-              <th className="px-3 py-3 font-semibold">Tạo lúc</th>
-              <th className="px-3 py-3 font-semibold">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alerts.map((alert) => (
-              <tr key={alert.alertId} className="border-b border-[var(--border)] last:border-b-0">
-                <td className="px-3 py-3 font-mono text-xs">{alert.alertId}</td>
-                <td className="px-3 py-3">{alert.title}</td>
-                <td className="px-3 py-3 capitalize">{alert.source.replaceAll('_', ' ')}</td>
-                <td className="px-3 py-3">{alert.alertType ?? 'chờ suy luận'}</td>
-                <td className="px-3 py-3">{alert.severity ?? 'chưa đặt'}</td>
-                <td className="px-3 py-3">
-                  {alert.confidence !== undefined ? `${alert.confidence}%` : 'chưa đặt'}
-                </td>
-                <td className="px-3 py-3">{new Date(alert.createdAt).toLocaleString()}</td>
-                <td className="px-3 py-3">
-                  <Link className="text-teal-700 underline" href={`/alerts/${alert.alertId}`}>
-                    Xem chi tiết
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <DataTable
+      columns={columns}
+      data={alerts}
+      emptyMessage="No raw alerts match the current filters."
+      error={error}
+      filters={
+        <FilterBar>
+          <SelectFilter label="Alert type" onChange={(value) => { setPage(1); setAlertType(value); }} options={alertTypeOptions} value={alertType} />
+          <SelectFilter label="Severity" onChange={(value) => { setPage(1); setSeverity(value); }} options={severityOptions} value={severity} />
+          <SelectFilter
+            label="Source"
+            onChange={(value) => { setPage(1); setSource(value); }}
+            options={[
+              { value: 'pcap_demo', label: 'PCAP Intake' },
+              { value: 'suricata', label: 'suricata' },
+              { value: 'wazuh', label: 'wazuh' },
+              { value: 'zeek', label: 'zeek' },
+              { value: 'manual', label: 'manual' },
+              { value: 'mock', label: 'mock' },
+            ]}
+            value={source}
+          />
+          <TextFilter label="PCAP job" onChange={(value) => { setPage(1); setPcapJobId(value); }} placeholder="PCAPJOB-..." value={pcapJobId} />
+        </FilterBar>
+      }
+      getRowKey={(alert) => alert.alertId}
+      limit={limit}
+      loading={loading}
+      onLimitChange={(nextLimit) => { setPage(1); setLimit(nextLimit); }}
+      onPageChange={setPage}
+      page={page}
+      title="Raw Alerts"
+      total={total}
+    />
   );
 }

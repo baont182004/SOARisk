@@ -1,14 +1,18 @@
 'use client';
 
-import type { Incident } from '@soc-soar/shared';
+import type { ApiCollectionMeta, Incident } from '@soc-soar/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { fetchApi } from '../lib/api';
-import { StatusBadge } from './status-badge';
+import { DataTable, type DataTableColumn } from './data-table';
+import { SeverityBadge, StatusBadge } from './status-badge';
 
 export function IncidentsTable() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,20 +20,21 @@ export function IncidentsTable() {
     let active = true;
 
     const loadIncidents = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetchApi<Incident[]>('/incidents', { cache: 'no-store' });
-
-        if (active) {
-          setIncidents(response.data);
-        }
+        const response = await fetchApi<Incident[], ApiCollectionMeta>(
+          `/incidents?limit=${limit}&page=${page}`,
+          { cache: 'no-store' },
+        );
+        if (!active) return;
+        setIncidents(response.data);
+        setTotal(response.meta?.total ?? response.data.length);
       } catch (loadError) {
-        if (active) {
-          setError(loadError instanceof Error ? loadError.message : 'Không tải được danh sách incident.');
-        }
+        if (!active) return;
+        setError(loadError instanceof Error ? loadError.message : 'Không tải được danh sách incident.');
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -38,81 +43,52 @@ export function IncidentsTable() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [limit, page]);
 
-  if (loading) {
-    return <PanelMessage message="Đang tải incident từ API..." />;
-  }
-
-  if (error) {
-    return <PanelMessage message={error} tone="error" />;
-  }
-
-  if (incidents.length === 0) {
-    return <PanelMessage message="Chưa có incident. Hãy chạy Demo Wizard hoặc khởi chạy workflow trước." />;
-  }
-
-  return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Sổ theo dõi incident</h3>
-        <StatusBadge status="live_api" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-slate-500">
-              <th className="px-3 py-3 font-semibold">Incident ID</th>
-              <th className="px-3 py-3 font-semibold">Tiêu đề</th>
-              <th className="px-3 py-3 font-semibold">Mức độ</th>
-              <th className="px-3 py-3 font-semibold">Trạng thái</th>
-              <th className="px-3 py-3 font-semibold">Workflow</th>
-              <th className="px-3 py-3 font-semibold">Cập nhật lúc</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incidents.map((incident) => (
-              <tr
-                className="border-b border-[var(--border)] last:border-b-0"
-                key={incident.incidentId}
-              >
-                <td className="px-3 py-3 font-mono text-xs">
-                  <Link className="text-teal-700 underline" href={`/incidents/${incident.incidentId}`}>
-                    {incident.incidentId}
-                  </Link>
-                </td>
-                <td className="px-3 py-3">{incident.title}</td>
-                <td className="px-3 py-3">{incident.severity}</td>
-                <td className="px-3 py-3"><StatusBadge status={incident.status} /></td>
-                <td className="px-3 py-3 font-mono text-xs">
-                  {incident.executionId ? (
-                    <Link className="text-teal-700 underline" href={`/workflows/${incident.executionId}`}>
-                      {incident.executionId}
-                    </Link>
-                  ) : (
-                    'chưa có'
-                  )}
-                </td>
-                <td className="px-3 py-3">{new Date(incident.updatedAt).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+  const columns = useMemo<Array<DataTableColumn<Incident>>>(
+    () => [
+      {
+        key: 'incidentId',
+        header: 'Incident ID',
+        render: (incident) => (
+          <Link className="font-mono text-xs text-teal-700 underline" href={`/incidents/${incident.incidentId}`}>
+            {incident.incidentId}
+          </Link>
+        ),
+      },
+      { key: 'title', header: 'Title', className: 'min-w-64', render: (incident) => incident.title },
+      { key: 'severity', header: 'Severity', render: (incident) => <SeverityBadge severity={incident.severity} /> },
+      { key: 'status', header: 'Status', render: (incident) => <StatusBadge status={incident.status} /> },
+      {
+        key: 'workflow',
+        header: 'Workflow',
+        render: (incident) => incident.executionId ? (
+          <Link className="font-mono text-xs text-teal-700 underline" href={`/workflows/${incident.executionId}`}>
+            {incident.executionId}
+          </Link>
+        ) : (
+          'Pending'
+        ),
+      },
+      { key: 'updatedAt', header: 'Updated time', render: (incident) => new Date(incident.updatedAt).toLocaleString() },
+    ],
+    [],
   );
-}
 
-function PanelMessage({ message, tone }: { message: string; tone?: 'error' }) {
   return (
-    <section
-      className={`rounded-2xl border p-6 shadow-sm ${
-        tone === 'error'
-          ? 'border-rose-200 bg-rose-50 text-rose-800'
-          : 'border-[var(--border)] bg-[var(--panel)] text-slate-600'
-      }`}
-    >
-      <p className="text-sm">{message}</p>
-    </section>
+    <DataTable
+      columns={columns}
+      data={incidents}
+      emptyMessage="No incidents found."
+      error={error}
+      getRowKey={(incident) => incident.incidentId}
+      limit={limit}
+      loading={loading}
+      onLimitChange={(nextLimit) => { setPage(1); setLimit(nextLimit); }}
+      onPageChange={setPage}
+      page={page}
+      title="Incident Tracking"
+      total={total}
+    />
   );
 }

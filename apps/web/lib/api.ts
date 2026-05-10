@@ -2,16 +2,19 @@ import type { ApiResponse } from '@soc-soar/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
-export async function fetchApi<TData>(
+export async function fetchApi<TData, TMeta = undefined>(
   path: string,
   init?: RequestInit,
-): Promise<ApiResponse<TData>> {
+): Promise<ApiResponse<TData, TMeta>> {
+  const isFormData = init?.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers: isFormData
+      ? { ...(init?.headers ?? {}) }
+      : {
+          'Content-Type': 'application/json',
+          ...(init?.headers ?? {}),
+        },
   });
 
   const payload = (await response.json()) as
@@ -27,7 +30,7 @@ export async function fetchApi<TData>(
     throw new Error(errorMessage);
   }
 
-  return payload as ApiResponse<TData>;
+  return payload as ApiResponse<TData, TMeta>;
 }
 
 export async function fetchOptionalApi<TData>(

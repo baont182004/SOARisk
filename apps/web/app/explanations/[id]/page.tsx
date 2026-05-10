@@ -1,5 +1,4 @@
 import { ExplanationDetail } from '../../../components/explanation-detail';
-import { FutureNote } from '../../../components/future-note';
 import { PageIntro } from '../../../components/page-intro';
 
 export default async function ExplanationDetailPage({
@@ -12,12 +11,11 @@ export default async function ExplanationDetailPage({
   return (
     <>
       <PageIntro
-        title={`Giải thích ${id}`}
-        role="Chi tiết giải thích"
-        description="Chuyển điểm khuyến nghị thành các phần giải thích dễ đọc: lý do theo playbook, ghi chú phê duyệt và giới hạn."
+        title={`Explanation ${id}`}
+        role="Decision Rationale"
+        description="Recommendation rationale, evidence and approval context."
       />
       <ExplanationDetail explanationId={id} />
-      <FutureNote note="Nội dung giải thích chỉ hỗ trợ quyết định. Nó không thực thi, phê duyệt hay mô phỏng hành động phản hồi." />
     </>
   );
 }

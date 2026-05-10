@@ -34,11 +34,12 @@ export class AlertsService {
 
   async findAll(query: QueryRawAlertsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     const filter = {
       ...(query.source ? { source: query.source } : {}),
       ...(query.alertType ? { alertType: query.alertType } : {}),
       ...(query.severity ? { severity: query.severity } : {}),
+      ...(query.pcapJobId ? { 'rawPayload.pcapJobId': query.pcapJobId } : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -79,7 +80,7 @@ export class AlertsService {
 
     if (!payload) {
       throw new BadRequestException(
-        `Unsupported mock scenario '${scenario}'. Supported scenarios: ${Object.keys(
+        `Unsupported alert scenario '${scenario}'. Supported scenarios: ${Object.keys(
           RAW_ALERT_MOCK_PAYLOADS,
         ).join(', ')}`,
       );
@@ -88,7 +89,7 @@ export class AlertsService {
     const created = await this.createRawAlertDocument(payload);
 
     return createSuccessResponse(
-      `Mock raw alert created for scenario '${scenario}'.`,
+      `Raw alert created for scenario '${scenario}'.`,
       created.toObject(),
     );
   }

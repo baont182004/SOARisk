@@ -18,7 +18,7 @@ export class QueryExplanationsDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @Type(() => Number)

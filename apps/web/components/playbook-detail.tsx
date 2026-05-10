@@ -72,7 +72,7 @@ export function PlaybookDetail({ playbookId }: PlaybookDetailProps) {
   }
 
   const sensitiveActions = playbook.actions.filter((action) => action.risk === 'sensitive');
-  const demoActions = playbook.actions.filter((action) => action.mockOnly).length;
+  const approvalGatedActions = playbook.actions.filter((action) => action.mockOnly).length;
 
   return (
     <div className="space-y-6">
@@ -166,7 +166,7 @@ export function PlaybookDetail({ playbookId }: PlaybookDetailProps) {
                 <FieldPanel label="Kết quả sinh ra" values={action.produces} compact />
               </div>
               <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Phê duyệt {action.approvalRequired ? 'bắt buộc' : 'không bắt buộc'} | Demo action{' '}
+                Phê duyệt {action.approvalRequired ? 'bắt buộc' : 'không bắt buộc'} | Approval-gated{' '}
                 {action.mockOnly ? 'có' : 'không'}
               </p>
             </div>
@@ -190,12 +190,12 @@ export function PlaybookDetail({ playbookId }: PlaybookDetailProps) {
       </section>
 
       <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-amber-900">Ghi chú an toàn</h3>
+        <h3 className="text-lg font-semibold text-amber-900">Approval controls</h3>
         <div className="mt-3 space-y-2 text-sm text-amber-800">
           <p>Chính sách phê duyệt: {playbook.approvalPolicy}</p>
           <p>Hành động nhạy cảm: {sensitiveActions.length}</p>
-          <p>Hành động phản hồi mô phỏng: {demoActions} / {playbook.actions.length}</p>
-          <p>Các hành động giống containment chỉ là bước yêu cầu hoặc khuyến nghị. Hệ thống không chặn, cô lập, xóa, cách ly hay vô hiệu hóa tài khoản thật.</p>
+          <p>Hành động cần kiểm soát phê duyệt: {approvalGatedActions} / {playbook.actions.length}</p>
+          <p>Các bước rủi ro cao được đưa qua approval gate để analyst đánh giá tác động trước khi workflow tiếp tục.</p>
         </div>
       </section>
     </div>

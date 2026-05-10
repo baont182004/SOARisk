@@ -1,7 +1,7 @@
 import { PageIntro } from '../../components/page-intro';
 import { PcapDemoPanel } from '../../components/pcap-demo-panel';
 
-export default function PcapDemoPage() {
+export default function PcapIntakePage() {
   return (
     <>
       <PageIntro
